@@ -236,65 +236,67 @@ def sprite16(art):
     return out
 
 
-# Ulisse a 3 LAYER: bianco (elmo corinzio con feritoie, tunica,
-# schinieri), rosso (cimiero e mantello), bronzo (viso attraverso
-# le feritoie, braccia, cosce). Il layer bronzo usa lo slot sprite
-# della mano del ciclope: sparisce solo durante gli attacchi, cosi'
-# il limite di 4 sprite/riga del TMS9918 non viene mai superato.
-UL_W_STAND = ['.....######.....', '....########....', '....########....',
-              '....##.##.##....', '....###..###....', '.....######.....',
-              '....########....', '...##########...', '...#.######.#...',
-              '.....######.....', '....########....', '....#.#..#.#....',
-              '................', '.....#....#.....', '.....#....#.....',
-              '....##....##....']
-UL_R_STAND = ['..###...........', '.##.............', '.##.............',
-              '..##............', '..##............', '..##............',
-              '..###...........', '..###...........', '..####..........',
-              '...###..........', '...##...........', '....#...........',
-              '................', '................', '................',
-              '................']
-UL_B_STAND = ['................', '................', '................',
-              '......#..#......', '.......##.......', '................',
-              '................', '................', '....#......#....',
-              '....#......#....', '................', '................',
-              '.....##..##.....', '................', '................',
-              '................']
-UL_W_WALK = ['.....######.....', '....########....', '....########....',
-             '....##.##.##....', '....###..###....', '.....######.....',
-             '....########....', '...##########...', '...#.######.#...',
-             '.....######.....', '....########....', '....#.#..#.#....',
-             '................', '...##......#....', '..##........#...',
-             '.###.......##...']
-UL_R_WALK = ['..###...........', '.##.............', '.##.............',
-             '..##............', '..##............', '..###...........',
-             '...###..........', '...###..........', '....###.........',
-             '....###.........', '.....##.........', '................',
-             '................', '................', '................',
-             '................']
-UL_B_WALK = ['................', '................', '................',
-             '......#..#......', '.......##.......', '................',
-             '................', '................', '....#......#....',
-             '....#......#....', '................', '................',
-             '....##...##.....', '................', '................',
-             '................']
-UL_W_JUMP = ['.....######.....', '....########....', '....########....',
-             '....##.##.##....', '....###..###....', '.....######.....',
-             '...##########...', '..#.########.#..', '.....######.....',
-             '....########....', '....#.#..#.#....', '................',
-             '....#....#......', '...##....##.....', '................',
-             '................']
-UL_R_JUMP = ['..###...........', '.##..#..........', '.#...##.........',
-             '.#....##........', '.##...##........', '..##..###.......',
-             '...#..###.......', '....####........', '................',
-             '................', '................', '................',
-             '................', '................', '................',
-             '................']
-UL_B_JUMP = ['................', '................', '................',
-             '......#..#......', '.......##.......', '................',
-             '................', '.....#....#.....', '...#........#...',
-             '................', '................', '.....##.##......',
-             '................', '................', '................',
-             '................']
+# Ulisse a 3 LAYER, DI PROFILO verso destra: il profilo dell'elmo
+# corinzio (calotta, paranaso, guanciale, il foro dell'occhio col
+# viso che traspare) e' la sagoma greca per eccellenza. Cimiero e
+# mantello ROSSI, viso/braccio/cosce in bronzo. Si disegna UNA
+# griglia composita (W=bianco, R=rosso, B=bronzo) e i layer si
+# separano da soli: sempre coerenti. Il layer bronzo usa lo slot
+# sprite della mano del ciclope: sparisce solo durante gli attacchi,
+# cosi' il limite di 4 sprite/riga del TMS9918 non si supera mai.
+UL_STAND = ['......RRRR......',
+            '....RRRRRRRR....',
+            '....WWWWWWWW....',
+            '...WWWWWWWWWW...',
+            '...WWWWWW.BWW...',
+            '...WWWWWW.BW....',
+            '......BB........',
+            '...RRWWWWWW.....',
+            '..RRWWWWWWWB....',
+            '..RRWWWWWWWB....',
+            '..RR.WWWWWW.....',
+            '..R.WWWWWWWW....',
+            '.....BB..BB.....',
+            '.....WW..WW.....',
+            '.....WW..WW.....',
+            '....WWW..WWW....']
+UL_WALK = ['......RRRR......',
+           '....RRRRRRRR....',
+           '....WWWWWWWW....',
+           '...WWWWWWWWWW...',
+           '...WWWWWW.BWW...',
+           '...WWWWWW.BW....',
+           '......BB........',
+           '..RRRWWWWWW.....',
+           '.RRRWWWWWWWB....',
+           '.RRWWWWWWWB.....',
+           '..RRWWWWWW......',
+           '...RWWWWWWWW....',
+           '....BB....BB....',
+           '...WW......WW...',
+           '..WW........WW..',
+           '..WW.........WW.']
+UL_JUMP = ['......RRRR......',
+           '....RRRRRRRR....',
+           '..R.WWWWWWWW....',
+           '..RRWWWWWWWWW...',
+           '..R.WWWWWW.BWW..',
+           '....WWWWWW.BW...',
+           '.......BB.......',
+           '..RR.WWWWWWB....',
+           '..RRWWWWWWWB....',
+           '...RWWWWWWW.....',
+           '....WWWWWWW.....',
+           '....BB..BB......',
+           '...WW..WW.......',
+           '...WW.WW........',
+           '................',
+           '................']
+
+
+def ul_layer(art, ch):
+    """Estrae un layer dalla griglia composita."""
+    return [''.join('#' if c == ch else '.' for c in row) for row in art]
 HAND_L = ['................', '................', '....########....',
           '..############..', '.##############.', '################',
           '################', '################', '################',
@@ -385,10 +387,11 @@ def main():
     out.append('; sprite: Ulisse a 3 layer (bianco 0/4/8, rosso 12/16/20,')
     out.append('; bronzo 24/28/32: fermo/passo/salto) + mano (36/40)')
     out.append('ep_sprites:')
-    for art in (UL_W_STAND, UL_W_WALK, UL_W_JUMP,
-                UL_R_STAND, UL_R_WALK, UL_R_JUMP,
-                UL_B_STAND, UL_B_WALK, UL_B_JUMP,
-                HAND_L, HAND_R):
+    layer_arts = []
+    for ch in 'WRB':
+        for art in (UL_STAND, UL_WALK, UL_JUMP):
+            layer_arts.append(ul_layer(art, ch))
+    for art in layer_arts + [HAND_L, HAND_R]:
         data = sprite16(art)
         for i in range(0, 32, 16):
             out.append('        db  ' +
@@ -410,22 +413,14 @@ def preview_ulisse():
         from PIL import Image
     except ImportError:
         return
-    frames = [(UL_W_STAND, UL_R_STAND, UL_B_STAND),
-              (UL_W_WALK, UL_R_WALK, UL_B_WALK),
-              (UL_W_JUMP, UL_R_JUMP, UL_B_JUMP)]
     img = Image.new('RGB', (3 * 20 + 4, 20), PAL[1])
-    for f, (w, r, b) in enumerate(frames):
+    cmap = {'W': 15, 'R': 8, 'B': 10}
+    for f, art in enumerate((UL_STAND, UL_WALK, UL_JUMP)):
         for y in range(16):
             for x in range(16):
-                c = None
-                if w[y][x] == '#':
-                    c = 15
-                elif r[y][x] == '#':
-                    c = 8
-                elif b[y][x] == '#':
-                    c = 10
-                if c is not None:
-                    img.putpixel((f * 20 + 2 + x, y + 2), PAL[c])
+                if art[y][x] in cmap:
+                    img.putpixel((f * 20 + 2 + x, y + 2),
+                                 PAL[cmap[art[y][x]]])
     dst = os.path.join(ROOT, 'build', 'ulisse_preview.png')
     img.resize(((3 * 20 + 4) * 8, 160), Image.NEAREST).save(dst)
     print('scritta preview %s' % dst)
