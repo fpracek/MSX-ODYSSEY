@@ -8,6 +8,16 @@ in [DESIGN.md](DESIGN.md).
 
 In mare: frecce = timone. A terra: frecce = gambe, FIRE/SPACE = salto.
 
+**Cheat di collaudo**: sul titolo digitare `GOTO` + cifra 1..6 per
+saltare dritti a quella tratta — e al suo sbarco, se l'isola ha un
+episodio (`GOTO1` = la caverna di Polifemo).
+
+**Ulisse a 3 colori**: elmo corinzio e tunica bianchi, cimiero e
+mantello ROSSI, viso (attraverso le feritoie dell'elmo), braccia e
+cosce in bronzo. Il layer bronzo condivide lo slot sprite con la
+mano del ciclope: sparisce solo durante gli attacchi, così il
+limite di 4 sprite/riga del TMS9918 non viene mai superato.
+
 **L'episodio di Polifemo** (banchi 2-3: engine platform + dati da
 gen_cave.py): all'arrivo ai Ciclopi si SBARCA (phase=1, sopravvive
 al restart). Due stanze flip-screen (spiaggia → caverna) con fisica

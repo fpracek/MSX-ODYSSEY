@@ -283,17 +283,27 @@ room1_meta:
 room_tab:
         dw  room0, room0_meta
         dw  room1, room1_meta
-; sprite: Ulisse fermo/passo1/passo2(=fermo)/salto,
-; poi la mano del ciclope (2 pattern)
+; sprite: Ulisse a 3 layer (bianco 0/4/8, rosso 12/16/20,
+; bronzo 24/28/32: fermo/passo/salto) + mano (36/40)
 ep_sprites:
-        db  003h,007h,005h,007h,003h,00Fh,01Bh,013h,013h,003h,006h,004h,004h,004h,00Ch,000h
-        db  080h,0C0h,0C0h,0C0h,080h,0E0h,0B0h,090h,090h,080h,0C0h,040h,040h,040h,060h,000h
-        db  003h,007h,005h,007h,003h,00Fh,01Bh,013h,003h,007h,00Ch,008h,018h,010h,030h,000h
-        db  080h,0C0h,0C0h,0C0h,080h,0E0h,0B0h,090h,080h,0C0h,060h,020h,010h,008h,018h,000h
-        db  003h,007h,005h,007h,003h,00Fh,01Bh,013h,013h,003h,006h,004h,004h,004h,00Ch,000h
-        db  080h,0C0h,0C0h,0C0h,080h,0E0h,0B0h,090h,090h,080h,0C0h,040h,040h,040h,060h,000h
-        db  003h,007h,005h,007h,023h,01Fh,00Fh,003h,003h,006h,00Ch,018h,010h,000h,000h,000h
-        db  080h,0C0h,0C0h,0C0h,088h,0F0h,0E0h,080h,080h,0C0h,060h,030h,010h,000h,000h,000h
+        db  007h,00Fh,00Fh,00Dh,00Eh,007h,00Fh,01Fh,017h,007h,00Fh,00Ah,000h,004h,004h,00Ch
+        db  0E0h,0F0h,0F0h,0B0h,070h,0E0h,0F0h,0F8h,0E8h,0E0h,0F0h,050h,000h,020h,020h,030h
+        db  007h,00Fh,00Fh,00Dh,00Eh,007h,00Fh,01Fh,017h,007h,00Fh,00Ah,000h,018h,030h,070h
+        db  0E0h,0F0h,0F0h,0B0h,070h,0E0h,0F0h,0F8h,0E8h,0E0h,0F0h,050h,000h,010h,008h,018h
+        db  007h,00Fh,00Fh,00Dh,00Eh,007h,01Fh,02Fh,007h,00Fh,00Ah,000h,008h,018h,000h,000h
+        db  0E0h,0F0h,0F0h,0B0h,070h,0E0h,0F8h,0F4h,0E0h,0F0h,050h,000h,040h,060h,000h,000h
+        db  038h,060h,060h,030h,030h,030h,038h,038h,03Ch,01Ch,018h,008h,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  038h,060h,060h,030h,030h,038h,01Ch,01Ch,00Eh,00Eh,006h,000h,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  038h,064h,046h,043h,063h,033h,013h,00Fh,000h,000h,000h,000h,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,080h,080h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  000h,000h,000h,002h,001h,000h,000h,000h,008h,008h,000h,000h,006h,000h,000h,000h
+        db  000h,000h,000h,040h,080h,000h,000h,000h,010h,010h,000h,000h,060h,000h,000h,000h
+        db  000h,000h,000h,002h,001h,000h,000h,000h,008h,008h,000h,000h,00Ch,000h,000h,000h
+        db  000h,000h,000h,040h,080h,000h,000h,000h,010h,010h,000h,000h,060h,000h,000h,000h
+        db  000h,000h,000h,002h,001h,000h,000h,004h,010h,000h,000h,006h,000h,000h,000h,000h
+        db  000h,000h,000h,040h,080h,000h,000h,020h,008h,000h,000h,0C0h,000h,000h,000h,000h
         db  000h,000h,00Fh,03Fh,07Fh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,07Fh,03Fh,00Fh,000h,000h
         db  000h,000h,0F0h,0FCh,0FEh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FEh,0FCh,0F0h,000h,000h
         db  000h,000h,000h,003h,00Fh,03Fh,0FFh,0FFh,0FFh,0FFh,03Fh,00Fh,003h,000h,000h,000h

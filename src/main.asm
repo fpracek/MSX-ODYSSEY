@@ -22,6 +22,7 @@ WRTVDP  equ 0047h
 CHGMOD  equ 005Fh
 GTSTCK  equ 00D5h
 GTTRIG  equ 00D8h
+SNSMAT  equ 00141h      ; A=riga matrice -> A=bit (0=premuto)
 ENASLT  equ 00024h
 RSLREG  equ 00138h
 EXPTBL  equ 0FCC1h
@@ -193,6 +194,8 @@ island_flag equ 0C03Ah  ; 0=no, 1=da disegnare (ISR), 2=disegnata
 rock_cnt    equ 0C03Bh  ; contatore scogli (per i test)
 sfx_type    equ 0C03Ch  ; profilo dell'effetto sul canale A:
                         ; 0 = tuono (schiocco + rombo), 1 = splash
+cheat_idx   equ 0C03Fh  ; avanzamento della sequenza GOTO (bit7 =
+                        ; attesa del rilascio del tasto accettato)
 ship_y      equ 0C03Dh  ; Y della nave (fissa in gioco, sale
                         ; verso l'orizzonte durante l'approdo)
 land_hold   equ 0C03Eh  ; pausa finale dell'approdo
@@ -1383,6 +1386,8 @@ title_show:
 .wait:
         halt
         call music_tick
+        call cheat_check    ; GOTO1..6: si salpa dritti alla tratta
+        jr  nz,.go
         call read_trig
         cp  0FFh
         jr  nz,.wait
@@ -1392,9 +1397,82 @@ title_show:
         call read_trig
         cp  0FFh
         jr  z,.rel
+.go:
         ld  a,TITLE_BANK+1  ; dissolvenza in uscita, musica viva
         call fade_out
         jp  psg_mute        ; il gioco reimposta il suo PSG
+
+; ------------------------------------------------------------
+; cheat di collaudo: sul titolo, digitare GOTO seguito da una
+; cifra 1..6 porta dritti a quella tratta - e al suo SBARCO se
+; l'isola ha un episodio (GOTO1 = la caverna di Polifemo).
+; Ritorna NZ quando la sequenza e' completa.
+; ------------------------------------------------------------
+cheat_check:
+        ld  a,(cheat_idx)
+        and 07h
+        cp  4
+        jr  z,.digit
+        ; il prossimo tasto atteso della sequenza G,O,T,O
+        add a,a
+        ld  l,a
+        ld  h,0
+        ld  bc,cheat_tab
+        add hl,bc
+        ld  a,(hl)
+        inc hl
+        push hl
+        call SNSMAT
+        pop hl
+        and (hl)
+        jr  z,.hit          ; premuto (bit basso)
+        ld  a,(cheat_idx)   ; rilasciato: riarma l'accettazione
+        and 07h
+        ld  (cheat_idx),a
+        xor a
+        ret
+.hit:
+        ld  a,(cheat_idx)
+        bit 7,a
+        jr  z,.accept
+        xor a               ; ancora tenuto: gia' contato
+        ret
+.accept:
+        inc a
+        or  80h
+        ld  (cheat_idx),a
+        xor a
+        ret
+.digit:
+        xor a
+        call SNSMAT         ; riga 0: le cifre
+        cpl                 ; 1 = premuto
+        and 01111110b       ; solo 1..6
+        ret z
+        ld  c,0
+.dg:
+        srl a
+        inc c
+        jr  nc,.dg
+        dec c               ; C = cifra 1..6
+        ld  a,c
+        dec a
+        ld  (leg),a
+        ld  l,a
+        ld  h,0
+        ld  bc,episode_tab
+        add hl,bc
+        ld  a,(hl)
+        ld  (phase),a       ; sbarco diretto se c'e' l'episodio
+        or  0FFh            ; NZ: scattato
+        ret
+
+; la sequenza: (riga, maschera) di G, O, T, O
+cheat_tab:
+        db  3,10h
+        db  4,10h
+        db  5,02h
+        db  4,10h
 
 ; ------------------------------------------------------------
 ; la pergamena del viaggio: rotta percorsa, tratta che inizia,
