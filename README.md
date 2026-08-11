@@ -4,9 +4,22 @@ Action-platform episodico sull'Odissea. MSX1 puro (TMS9918, 16KB RAM),
 MegaROM ASCII8, tutto in assembly Z80 (sjasmplus). Il design completo è
 in [DESIGN.md](DESIGN.md).
 
-## Stato: sezione navale giocabile (vinci o perdi)
+## Stato: traversata + SBARCO + l'episodio di Polifemo
 
-Frecce (o joystick) = timone.
+In mare: frecce = timone. A terra: frecce = gambe, FIRE/SPACE = salto.
+
+**L'episodio di Polifemo** (banchi 2-3: engine platform + dati da
+gen_cave.py): all'arrivo ai Ciclopi si SBARCA (phase=1, sopravvive
+al restart). Due stanze flip-screen (spiaggia → caverna) con fisica
+di salto 8.8 e collisioni a tile. Nella caverna il ciclope **cieco
+ti ascolta**: camminare è quasi silenzioso, saltare — e soprattutto
+atterrare da una caduta — riempie la **barra del RUMORE** (HUD).
+Oltre la prima soglia l'occhio si spalanca (rosso, tile swap) con un
+ringhio; oltre la seconda la sua **mano spazza il pavimento**: si
+schiva dalle sporgenze… saltando, che fa rumore. L'uscita è in alto:
+il salto finale è il climax. Russare, tonfi, ringhi e whoosh sul
+PSG. Vittoria → tratta verso Circe; ciurma a zero → si ritenta la
+caverna.
 
 **La struttura** — le traversate collegano le isole del viaggio:
 Ciclopi → Circe → Eolia → Sirene → Scilla → Itaca (che è solo
@@ -54,12 +67,12 @@ in tratta** (si torna in 12 solo dopo un naufragio).
   l'orizzonte resta livido), Eolo soffia sempre 64..95, e cadono
   fulmini ogni 1-2s: lampo bianco di avviso, scarica a zigzag (3
   sprite, metà cadono vicino alla nave), tuono sul canale A del PSG.
-- **Nel sereno lo scoglio**: la schiuma ribolle (avviso ~4s, col
-  suo **sfrigolio** sul canale A), poi il masso rompe l'acqua con
-  uno **splash** (burst di rumore chiaro, distinto dal tuono cupo)
-  e resta lì ~3s — va aggirato col timone, toccarlo costa un
-  compagno. Metà degli scogli affiorano sulla rotta della nave.
-  Priorità sul canale effetti: tuono/schianto > gabbiano > ribollio.
+- **Nel sereno il MOSTRO MARINO**: la schiuma ribolle (avviso ~4s,
+  col suo **sfrigolio**), poi il serpente d'abisso rompe l'acqua con
+  uno **splash** — testa che ondeggia su due frame sopra il collo,
+  magenta sul blu — e resta lì ~3s prima di rituffarsi. Va aggirato
+  col timone, toccarlo costa un compagno. Metà emergono sulla rotta
+  della nave. Priorità effetti: tuono > gabbiano > ribollio.
   Gli effetti hanno **inviluppi veri**: il tuono è schiocco brillante
   (8 frame a volume pieno) poi rombo cupo che ondeggia e sfuma con
   tremolo; lo splash è uno sweep rapido brillante→scuro. Durante
@@ -175,7 +188,7 @@ script Tcl scrivono su file e la finestra si chiude da sola.
 |-------|-----------|
 | 0 | kernel: boot, init VDP, ISR blast+OAM, routine VDP (no FILVRM: buggato) |
 | 1 | dati generati: mare + sprite + cielo/tratte (fisso in pagina 6000h) |
-| 2-3 | riservati engine (mappati di default) |
+| 2-3 | episodio di Polifemo: engine (episode.asm) + dati (gen_cave.py) |
 | 4 | firma self-test "N4" + asset futuri |
 | 5-7 | riserva |
 | 8-19 | pergamene: tratta k → banco 8+2k pattern, 9+2k colori |

@@ -99,9 +99,11 @@ HUD_MAN  equ 12         ; tile HUD (terzo 0, da gen_sky.py)
 HUD_DOT  equ 14
 HUD_FILL equ 15
 BOLT_PAT equ 16         ; pattern sprite del fulmine (dopo la nave)
-FOAM_PAT equ 20         ; schiuma d'avviso dello scoglio
-ROCK_PAT equ 24         ; scoglio
+FOAM_PAT equ 20         ; schiuma d'avviso del mostro marino
+ROCK_PAT equ 24         ; mostro marino: il collo (la base)
 GULL_PAT equ 28         ; gabbiano (28/32: due frame d'ali)
+SERP_HEAD1 equ 40       ; mostro marino: testa, 2 frame d'ondeggio
+SERP_HEAD2 equ 44
 CREW_COL equ 1          ; colonna HUD del primo marinaio
 BAR_COL  equ 19         ; colonna HUD della barra di rotta
 ; scoglio: fasi dal contatore unico rock_t (che scende da TOTAL)
@@ -210,6 +212,8 @@ musC_c      equ 0C04Bh
 musVA       equ 0C04Ch  ; volumi del brano corrente (per canale)
 musVB       equ 0C04Dh
 musVC       equ 0C04Eh
+phase       equ 0C04Fh  ; 0 = traversata, 1 = episodio a terra
+                        ; (sopravvive al jp init: sbarco e retry)
 
 ; ============================================================
 ;  BANCO 0: kernel + Proto 0
@@ -284,6 +288,7 @@ init:
         jr  z,.legok
         xor a
         ld  (leg),a
+        ld  (phase),a
         ld  a,CREW0
         ld  (crew_keep),a
         ld  a,05Ah
@@ -291,6 +296,11 @@ init:
         ; il viaggio comincia: title screen col tema del titolo
         call title_show
 .legok:
+
+        ; siamo SBARCATI? l'episodio a terra parte diretto
+        ld  a,(phase)
+        or  a
+        jp  nz,ep_start
 
         ; la pergamena del viaggio: rotta percorsa e prossima tratta
         call map_show
@@ -399,11 +409,11 @@ init:
         ld  hl,wavesA2_rowcol
         call fill_colors
 
-        ; pattern sprite: nave + fulmine + schiuma + scoglio +
-        ; gabbiano + nave lontana (10 pattern 16x16 = 320 byte)
+        ; pattern sprite: nave + fulmine + schiuma + mostro marino
+        ; (collo e 2 teste) + gabbiano + nave lontana (12 = 384 byte)
         ld  hl,ship_patterns
         ld  de,VR_SPRP
-        ld  bc,320
+        ld  bc,384
         call vdp_copy
 
         ; pattern iniziali (preshift 0)
@@ -603,14 +613,25 @@ end_sequence:
         halt
         jr  .esloop
 .esdone:
-        ; arrivo: la ciurma superstite prosegue alla tratta dopo
-        ; (l'isola raggiunta diventera' l'episodio a terra);
+        ; arrivo: se l'isola ha un episodio si SBARCA, altrimenti
+        ; la ciurma superstite prosegue alla tratta dopo;
         ; naufragio: si ritenta la stessa tratta con 12 compagni
         ld  a,(mode)
         dec a
         jr  nz,.eslose
         ld  a,(crew)
         ld  (crew_keep),a
+        ld  a,(leg)
+        ld  l,a
+        ld  h,0
+        ld  bc,episode_tab
+        add hl,bc
+        ld  a,(hl)
+        or  a
+        jr  z,.noep
+        ld  (phase),a       ; a terra! (leg resta: l'episodio e' suo)
+        jp  init
+.noep:
         ld  a,(leg)
         inc a
         cp  N_DESTS
@@ -1219,6 +1240,8 @@ show_bitmap_dark:
         ld  b,10100010b     ; schermo spento durante il caricamento
         ld  c,1
         call WRTVDP
+        di                  ; WRTVDP del BIOS puo' fare EI: i
+                            ; caricamenti restano protetti
         ld  a,208           ; niente sprite sulla bitmap
         ld  de,VR_SPRA
         ld  bc,1
@@ -1646,6 +1669,10 @@ mus_tickC:
         ld  (musC_p),de
         ret
 
+; quali isole hanno un episodio a terra (per ora: solo i Ciclopi)
+episode_tab:
+        db  1,0,0,0,0,0
+
 ; le raffiche di Eolo: perlopiu' favorevoli (il viaggio procede),
 ; con bonacce e colpi contrari da governare col timone
 gust_tab:
@@ -1958,9 +1985,9 @@ gauge_on:                   ; label per test/measure.tcl
         out (098h),a
         ld  a,c
         out (098h),a
-        jr  .oam_ship
+        jp  .oam_ship
 .bhid:
-        ; niente fulmine: nello slot 0 puo' esserci lo scoglio
+        ; niente fulmine: negli slot 0-1 puo' esserci il mostro
         ld  a,(rock_t)
         or  a
         jr  z,.rknone
@@ -1999,17 +2026,34 @@ gauge_on:                   ; label per test/measure.tcl
         out (098h),a
         ld  a,15
         out (098h),a
-        jr  .rkrest
-.rkdraw:                    ; A = attributo Y dello scoglio
+        ld  e,2
+        jr  .bhl
+.rkdraw:                    ; A = attributo Y del MOSTRO (base)
+        ld  d,a
+        sub 16              ; la testa ondeggia sopra il collo
         out (098h),a
+        ld  a,(rock_x)
+        out (098h),a
+        ld  a,(frame_cnt)
+        and 8
+        jr  z,.rkh1
+        ld  a,SERP_HEAD2
+        jr  .rkh2
+.rkh1:
+        ld  a,SERP_HEAD1
+.rkh2:
+        out (098h),a
+        ld  a,13            ; magenta d'abisso
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; il collo
         ld  a,(rock_x)
         out (098h),a
         ld  a,ROCK_PAT
         out (098h),a
-        ld  a,14            ; grigio roccia
+        ld  a,13
         out (098h),a
-.rkrest:
-        ld  e,2             ; gli altri due slot fulmine: nascosti
+        ld  e,1             ; l'ultimo slot fulmine: nascosto
         jr  .bhl
 .rknone:
         ld  e,3
@@ -2334,9 +2378,9 @@ gauge_on:                   ; label per test/measure.tcl
     IF BURN_CHUNKS > 0
         ; scritture extra verso l'area sprite libera (dopo i pattern
         ; della nave) per sondare il limite: ogni chunk = 256 byte
-        ld  a,low (VR_SPRP+180h)
+        ld  a,low (VR_SPRP+1C0h)
         out (099h),a
-        ld  a,(high (VR_SPRP+180h))|40h
+        ld  a,(high (VR_SPRP+1C0h))|40h
         out (099h),a
         ld  hl,04000h       ; sorgente qualunque (ROM)
         ld  e,BURN_CHUNKS
@@ -2615,15 +2659,17 @@ fill_colors:
         DS  08000h-$,0FFh
 
 ; ============================================================
-;  BANCO 2 (pagina 8000h): riservato engine/asset
+;  BANCO 2 (pagina 8000h): l'episodio di Polifemo (engine)
+;  (episode.asm contiene ORG 8000h e la guardia di fine banco)
 ; ============================================================
-        db  "NESSUNO-BANK2-RISERVATO"
-        DS  0A000h-$,0FFh
+        INCLUDE "episode.asm"
 
 ; ============================================================
-;  BANCO 3 (pagina A000h): riservato engine/asset
+;  BANCO 3 (pagina A000h): dati dell'episodio (tileset, stanze,
+;  il ciclope, sprite) generati da gen_cave.py
 ; ============================================================
-        db  "NESSUNO-BANK3-RISERVATO"
+        ORG 0A000h
+        INCLUDE "cave_data.asm"
         DS  0C000h-$,0FFh
 
 ; ============================================================

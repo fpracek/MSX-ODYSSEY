@@ -2,8 +2,9 @@ ROM = build/odyssey.rom
 
 all: $(ROM)
 
-$(ROM): src/main.asm src/waves_data.asm src/ship_data.asm src/sky_data.asm \
-        src/map0_pat.bin src/title_pat.bin src/music_data.asm src/fade_data.asm
+$(ROM): src/main.asm src/episode.asm src/waves_data.asm src/ship_data.asm \
+        src/sky_data.asm src/map0_pat.bin src/title_pat.bin \
+        src/music_data.asm src/fade_data.asm src/cave_data.asm
 	@mkdir -p build
 	sjasmplus --msg=err --sym=build/odyssey.sym src/main.asm
 
@@ -27,6 +28,9 @@ src/music_data.asm: tools/gen_music.py
 
 src/fade_data.asm: tools/gen_fade.py
 	python3 tools/gen_fade.py
+
+src/cave_data.asm: tools/gen_cave.py tools/gen_sky.py
+	python3 tools/gen_cave.py
 
 waves:
 	python3 tools/gen_waves.py

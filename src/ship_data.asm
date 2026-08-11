@@ -20,9 +20,9 @@ ship_patterns:
 ; schiuma (pattern 20)
         db  000h,000h,000h,000h,000h,000h,000h,000h,008h,023h,054h,093h,068h,027h,058h,024h
         db  000h,000h,000h,000h,000h,000h,000h,000h,040h,010h,0A8h,024h,058h,090h,068h,090h
-; scoglio (pattern 24)
-        db  003h,007h,00Fh,00Fh,01Fh,01Fh,03Fh,03Fh,07Fh,07Fh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
-        db  000h,080h,0C0h,0E0h,0F0h,0F8h,0F8h,0FCh,0FCh,0FEh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+; mostro marino, collo (pattern 24)
+        db  007h,00Fh,00Eh,00Fh,007h,007h,00Fh,00Fh,01Fh,01Fh,03Fh,04Fh,087h,04Fh,03Fh,05Fh
+        db  0E0h,0F0h,070h,0F0h,0E0h,0E0h,0F0h,0F0h,0F8h,0F8h,0FCh,0F2h,0E1h,0F2h,0FCh,0FAh
 ; gabbiano ali su (pattern 28)
         db  000h,000h,000h,030h,048h,084h,003h,001h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,030h,048h,084h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
@@ -32,5 +32,11 @@ ship_patterns:
 ; nave lontana (pattern 36)
         db  000h,000h,000h,002h,003h,007h,003h,002h,03Fh,01Fh,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,080h,000h,000h,0F0h,0E0h,000h,000h,000h,000h,000h,000h
+; mostro marino, testa A (pattern 40)
+        db  003h,00Fh,01Fh,03Dh,03Fh,01Ch,00Dh,007h,003h,003h,007h,007h,003h,003h,007h,007h
+        db  0C0h,0F0h,0F8h,0BCh,0FCh,038h,0B0h,0E0h,0C0h,0C0h,0E0h,0E0h,0C0h,0C0h,0E0h,0E0h
+; mostro marino, testa B (pattern 44)
+        db  000h,003h,007h,00Fh,00Fh,007h,003h,001h,003h,007h,007h,007h,003h,003h,007h,007h
+        db  0F0h,0FCh,0FEh,06Fh,0FFh,00Eh,06Ch,0F8h,0C0h,080h,0E0h,0E0h,0C0h,0C0h,0E0h,0E0h
 ship_bob:
         db  2,3,3,4,4,4,3,3,2,1,1,0,0,0,1,1
