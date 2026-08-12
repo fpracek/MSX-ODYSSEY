@@ -849,14 +849,14 @@ ep_isr:
         out (098h),a
         ld  a,15
         out (098h),a
-        ld  a,d             ; 2: rosso-su
+        ld  a,d             ; 2: chioma e barba (nero-su)
         out (098h),a
         ld  a,e
         out (098h),a
         ld  a,c
         add a,8
         out (098h),a
-        ld  a,8
+        ld  a,1             ; NERE, sullo sfondo indaco dei livelli
         out (098h),a
         ld  a,(cyc_state)   ; slot 3-4: bronzo... o la mano
         cp  2

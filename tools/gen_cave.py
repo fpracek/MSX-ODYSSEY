@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 ODYSSEY - episodio di Polifemo: tileset, stanze, il ciclope, sprite
 
@@ -32,7 +32,7 @@ C_DECO = 4      # puntini di fondo caverna
 # ------------------------------------------------------------------
 # tileset base: nome -> (8 righe ASCII, fg, bg)
 # ------------------------------------------------------------------
-def T(rows, fg, bg=1):
+def T(rows, fg, bg=4):
     return (rows, fg, bg)
 
 BASE_TILES = {
@@ -125,7 +125,7 @@ def grid_tile(g, bx, by):
             if c:
                 b |= 0x80 >> i
         pat.append(b)
-        col.append(((fg if fg else 1) << 4) | 1)
+        col.append(((fg if fg else 1) << 4) | 4)
     return pat, col
 
 
@@ -255,22 +255,22 @@ def sprite16(art):
 # capelli e barba rossicci (R: il nero sparirebbe sul fondo della
 # caverna), pelle bronzea (B) con gli OCCHI neri come spazio
 # negativo, sciarpa/mantello rossi, chitone bianco (W), stivali.
-UL_STAND = ['.....RRRRRR.....',
-            '....RRRRRRRR....',
-            '...RRRRRRRRRR...',
-            '...RRBBBBBBRR...',
-            '...RBBBBBBBBR...',
-            '...RBB.BB.BBR...',
-            '...RBBBBBBBBR...',
-            '...RBBBBBBBBR...',
-            '....RRRRRRRR....',
-            '...RRRRRRRRRR...',
-            '...RRRRRRRRRR...',
-            '.RRWWWWWWWWWWB..',
-            '.RRWWWWWWWWWWB..',
-            '.RRWWWWWWWWWWB..',
-            '.RRWWWWWWWWWW...',
-            '..RWWWWWWWWWW...',
+UL_STAND = ['.....KKKKKK.....',
+            '....KKKKKKKK....',
+            '...KKKKKKKKKK...',
+            '...KKBBBBBBKK...',
+            '...KBBBBBBBBK...',
+            '...KBBKBBKBBK...',
+            '...KBBBBBBBBK...',
+            '...KKBBBBBBKK...',
+            '....KKKKKKKK....',
+            '....WKKKKKKW....',
+            '...WWWWWWWWWW...',
+            '..BWWWWWWWWWWB..',
+            '..BWWWWWWWWWWB..',
+            '..BWWWWWWWWWWB..',
+            '...WWWWWWWWWW...',
+            '...WWWWWWWWWW...',
             '...WW.WWWW.WW...',
             '...WW.WWWW.WW...',
             '....BBB..BBB....',
@@ -283,17 +283,17 @@ UL_STAND = ['.....RRRRRR.....',
 # (regola dei platform: frontale solo da fermo); le versioni verso
 # sinistra sono specchiate dal generatore. Profilo verso destra:
 # chioma dietro, UN occhio (spazio negativo), barba sul mento.
-PR_WALKA = ['.....RRRRRR.....',
-            '....RRRRRRRR....',
-            '...RRRRRRRRRR...',
-            '...RRRRBBBBBB...',
-            '...RRRBBBBBBBB..',
-            '...RRRBBBB.BB...',
-            '...RRRBBBBBBBB..',
-            '....RRRBBBBBB...',
-            '.....RRRRRRR....',
-            '....RRRRRRRRR...',
-            '....RRRRRRRR....',
+PR_WALKA = ['.....KKKKKK.....',
+            '....KKKKKKKK....',
+            '...KKKKKKKKKK...',
+            '...KKKKBBBBBB...',
+            '...KKKBBBBBBBB..',
+            '...KKKBBBKBB....',
+            '...KKKBBBBBBBB..',
+            '....KKKBBBBBB...',
+            '.....KKKKKKK....',
+            '....WWWKKKKW....',
+            '....WWWWWWWW....',
             '....WWWWWWWW....',
             '...WWWWWWWWWB...',
             '...WWWWWWWWWB...',
@@ -307,17 +307,17 @@ PR_WALKA = ['.....RRRRRR.....',
             '..WWW.....WWW...',
             '.WWW.......WWW..',
             '.WWW.......WWW..']
-PR_WALKB = ['.....RRRRRR.....',
-            '....RRRRRRRR....',
-            '...RRRRRRRRRR...',
-            '...RRRRBBBBBB...',
-            '...RRRBBBBBBBB..',
-            '...RRRBBBB.BB...',
-            '...RRRBBBBBBBB..',
-            '....RRRBBBBBB...',
-            '.....RRRRRRR....',
-            '....RRRRRRRRR...',
-            '....RRRRRRRR....',
+PR_WALKB = ['.....KKKKKK.....',
+            '....KKKKKKKK....',
+            '...KKKKKKKKKK...',
+            '...KKKKBBBBBB...',
+            '...KKKBBBBBBBB..',
+            '...KKKBBBKBB....',
+            '...KKKBBBBBBBB..',
+            '....KKKBBBBBB...',
+            '.....KKKKKKK....',
+            '....WWWKKKKW....',
+            '....WWWWWWWW....',
             '....WWWWWWWW....',
             '...WWWWWWWWWB...',
             '...WWWWWWWWWB...',
@@ -331,17 +331,17 @@ PR_WALKB = ['.....RRRRRR.....',
             '....WWW.WWW.....',
             '....WWW.WWW.....',
             '...WWWW.WWW.....']
-PR_JUMP = ['.....RRRRRR.....',
-           '...RRRRRRRRR....',
-           '..RRRRRRRRRRR...',
-           '..RRRRRBBBBBB...',
-           '..RRRRBBBBBBBB..',
-           '...RRRBBBB.BB...',
-           '...RRRBBBBBBBB..',
-           '....RRRBBBBBB...',
-           '.....RRRRRRR....',
-           '....RRRRRRRRR...',
-           '....RRRRRRRR....',
+PR_JUMP = ['.....KKKKKK.....',
+           '...KKKKKKKKK....',
+           '..KKKKKKKKKKK...',
+           '..KKKKKBBBBBB...',
+           '..KKKKBBBBBBBB..',
+           '...KKKBBBKBB....',
+           '...KKKBBBBBBBB..',
+           '....KKKBBBBBB...',
+           '.....KKKKKKK....',
+           '....WWWKKKKW....',
+           '....WWWWWWWW....',
            '....WWWWWWWWB...',
            '...WWWWWWWWWB...',
            '...WWWWWWWWW....',
@@ -384,7 +384,7 @@ def main():
     npoli = POLI_W * POLI_H
     n_tiles = POLI_T0 + npoli
     pat = [[0] * 8 for _ in range(n_tiles)]
-    col = [[0x11] * 8 for _ in range(n_tiles)]
+    col = [[0x14] * 8 for _ in range(n_tiles)]
     for idx, (rows, fg, bg) in BASE_TILES.items():
         for y in range(8):
             b = 0
@@ -456,7 +456,7 @@ def main():
     out.append('; = indice*20): 0 fermo frontale, 20/40 passo A/B verso')
     out.append('; destra, 60 salto destra, 80/100/120 le stesse specchiate')
     out.append('; verso sinistra. Offsets: +0 bianco-su, +4 bianco-giu,')
-    out.append('; +8 rosso-su, +12 bronzo-su, +16 bronzo-giu. Mano: 140/144.')
+    out.append('; +8 nero-su (chioma), +12 bronzo-su, +16 bronzo-giu. Mano: 140/144.')
     out.append('ep_sprites:')
     poses = [UL_STAND, PR_WALKA, PR_WALKB, PR_JUMP,
              ul_mirror(PR_WALKA), ul_mirror(PR_WALKB), ul_mirror(PR_JUMP)]
@@ -466,7 +466,7 @@ def main():
         up = art[:16]
         dn = art[16:] + ['.' * 16] * 8
         seq += [ul_layer(up, 'W'), ul_layer(dn, 'W'),
-                ul_layer(up, 'R'),
+                ul_layer(up, 'K'),
                 ul_layer(up, 'B'), ul_layer(dn, 'B')]
     for art in seq + [HAND_L, HAND_R]:
         data = sprite16(art)
@@ -492,8 +492,8 @@ def preview_ulisse():
         return
     frames = (UL_STAND, PR_WALKA, PR_WALKB, PR_JUMP,
               ul_mirror(PR_WALKA))
-    img = Image.new('RGB', (len(frames) * 20 + 4, 28), PAL[1])
-    cmap = {'W': 15, 'R': 8, 'B': 10}
+    img = Image.new('RGB', (len(frames) * 20 + 4, 28), PAL[4])
+    cmap = {'W': 15, 'K': 1, 'B': 10}
     for f, art in enumerate(frames):
         for y in range(24):
             for x in range(16):
