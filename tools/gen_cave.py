@@ -279,54 +279,87 @@ UL_STAND = ['.....RRRRRR.....',
             '....WWW..WWW....',
             '....WWW..WWW....',
             '...WWWW..WWWW...']
-UL_WALK = ['.....RRRRRR.....',
-           '....RRRRRRRR....',
-           '...RRRRRRRRRR...',
-           '...RRBBBBBBRR...',
-           '...RBBBBBBBBR...',
-           '...RBB.BB.BBR...',
-           '...RBBBBBBBBR...',
-           '...RBBBBBBBBR...',
-           '....RRRRRRRR....',
-           '...RRRRRRRRRR...',
+# Le pose in movimento sono DI PROFILO nella direzione di marcia
+# (regola dei platform: frontale solo da fermo); le versioni verso
+# sinistra sono specchiate dal generatore. Profilo verso destra:
+# chioma dietro, UN occhio (spazio negativo), barba sul mento.
+PR_WALKA = ['.....RRRRRR.....',
+            '....RRRRRRRR....',
+            '...RRRRRRRRRR...',
+            '...RRRRBBBBBB...',
+            '...RRRBBBBBBBB..',
+            '...RRRBBBB.BB...',
+            '...RRRBBBBBBBB..',
+            '....RRRBBBBBB...',
+            '.....RRRRRRR....',
+            '....RRRRRRRRR...',
+            '....RRRRRRRR....',
+            '....WWWWWWWW....',
+            '...WWWWWWWWWB...',
+            '...WWWWWWWWWB...',
+            '...WWWWWWWWW....',
+            '....WWWWWWWW....',
+            '....WW.WW.WW....',
+            '....WW.WW.WW....',
+            '...BBB...BBB....',
+            '..BBB.....BBB...',
+            '..BBB.....BBB...',
+            '..WWW.....WWW...',
+            '.WWW.......WWW..',
+            '.WWW.......WWW..']
+PR_WALKB = ['.....RRRRRR.....',
+            '....RRRRRRRR....',
+            '...RRRRRRRRRR...',
+            '...RRRRBBBBBB...',
+            '...RRRBBBBBBBB..',
+            '...RRRBBBB.BB...',
+            '...RRRBBBBBBBB..',
+            '....RRRBBBBBB...',
+            '.....RRRRRRR....',
+            '....RRRRRRRRR...',
+            '....RRRRRRRR....',
+            '....WWWWWWWW....',
+            '...WWWWWWWWWB...',
+            '...WWWWWWWWWB...',
+            '...WWWWWWWWW....',
+            '....WWWWWWWW....',
+            '....WW.WW.WW....',
+            '....WW.WW.WW....',
+            '....BBB.BBB.....',
+            '....BBB.BBB.....',
+            '....BBB.BBB.....',
+            '....WWW.WWW.....',
+            '....WWW.WWW.....',
+            '...WWWW.WWW.....']
+PR_JUMP = ['.....RRRRRR.....',
+           '...RRRRRRRRR....',
            '..RRRRRRRRRRR...',
-           'RRRWWWWWWWWWWB..',
-           'RRRWWWWWWWWWWB..',
-           '.RRWWWWWWWWWWB..',
-           '.RRWWWWWWWWWW...',
-           '..RWWWWWWWWWW...',
-           '...WW.WWWW.WW...',
-           '...WW.WWWW.WW...',
-           '...BBB....BBB...',
-           '..BBB......BBB..',
-           '..BBB......BBB..',
-           '..WWW......WWW..',
-           '.WWW........WWW.',
-           '.WWW........WWW.']
-UL_JUMP = ['.....RRRRRR.....',
+           '..RRRRRBBBBBB...',
+           '..RRRRBBBBBBBB..',
+           '...RRRBBBB.BB...',
+           '...RRRBBBBBBBB..',
+           '....RRRBBBBBB...',
+           '.....RRRRRRR....',
+           '....RRRRRRRRR...',
            '....RRRRRRRR....',
-           '...RRRRRRRRRR...',
-           '...RRBBBBBBRR...',
-           '...RBBBBBBBBR...',
-           '...RBB.BB.BBR...',
-           '...RBBBBBBBBR...',
-           '...RBBBBBBBBR...',
-           '....RRRRRRRR....',
-           '..RRRRRRRRRRR...',
-           '.RRRRRRRRRRRR...',
-           'RRRWWWWWWWWWWB..',
-           '.RRWWWWWWWWWWB..',
-           '..RWWWWWWWWWW...',
-           '...WWWWWWWWWW...',
-           '...WW.WWWW.WW...',
-           '....BBB..BBB....',
-           '...WWW..WWW.....',
-           '...WWW..WWW.....',
+           '....WWWWWWWWB...',
+           '...WWWWWWWWWB...',
+           '...WWWWWWWWW....',
+           '....WWWWWWWW....',
+           '....WW.WW.WW....',
+           '....BBB.BBB.....',
+           '...WWW.WWW......',
+           '...WWW.WWW......',
            '................',
            '................',
            '................',
            '................',
            '................']
+
+
+def ul_mirror(art):
+    """La posa specchiata (verso sinistra)."""
+    return [row[::-1] for row in art]
 
 
 def ul_layer(art, ch):
@@ -419,12 +452,16 @@ def main():
     out.append('room_tab:')
     for k in range(len(rooms)):
         out.append('        dw  room%d, room%d_meta' % (k, k))
-    out.append('; sprite: Ulisse 16x24 in 2 meta\' x 3 layer. Per frame')
-    out.append('; (base 0/20/40): +0 bianco-su, +4 bianco-giu, +8 rosso-su,')
-    out.append('; +12 bronzo-su, +16 bronzo-giu. Mano: 60/64.')
+    out.append('; sprite: Ulisse 16x24 in 2 meta\' x 3 layer. Pose (base')
+    out.append('; = indice*20): 0 fermo frontale, 20/40 passo A/B verso')
+    out.append('; destra, 60 salto destra, 80/100/120 le stesse specchiate')
+    out.append('; verso sinistra. Offsets: +0 bianco-su, +4 bianco-giu,')
+    out.append('; +8 rosso-su, +12 bronzo-su, +16 bronzo-giu. Mano: 140/144.')
     out.append('ep_sprites:')
+    poses = [UL_STAND, PR_WALKA, PR_WALKB, PR_JUMP,
+             ul_mirror(PR_WALKA), ul_mirror(PR_WALKB), ul_mirror(PR_JUMP)]
     seq = []
-    for art in (UL_STAND, UL_WALK, UL_JUMP):
+    for art in poses:
         assert len(art) == 24, 'frame da %d righe' % len(art)
         up = art[:16]
         dn = art[16:] + ['.' * 16] * 8
@@ -453,16 +490,18 @@ def preview_ulisse():
         from PIL import Image
     except ImportError:
         return
-    img = Image.new('RGB', (3 * 20 + 4, 28), PAL[1])
+    frames = (UL_STAND, PR_WALKA, PR_WALKB, PR_JUMP,
+              ul_mirror(PR_WALKA))
+    img = Image.new('RGB', (len(frames) * 20 + 4, 28), PAL[1])
     cmap = {'W': 15, 'R': 8, 'B': 10}
-    for f, art in enumerate((UL_STAND, UL_WALK, UL_JUMP)):
+    for f, art in enumerate(frames):
         for y in range(24):
             for x in range(16):
                 if art[y][x] in cmap:
                     img.putpixel((f * 20 + 2 + x, y + 2),
                                  PAL[cmap[art[y][x]]])
     dst = os.path.join(ROOT, 'build', 'ulisse_preview.png')
-    img.resize(((3 * 20 + 4) * 8, 224), Image.NEAREST).save(dst)
+    img.resize((img.width * 8, 224), Image.NEAREST).save(dst)
     print('scritta preview %s' % dst)
 
 

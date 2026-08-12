@@ -50,6 +50,7 @@ ep_nlast  equ 0C064h
 snore_t   equ 0C065h
 ep_cyc    equ 0C066h    ; questa stanza ha il ciclope
 ep_end    equ 0C067h    ; 1 vittoria, 2 sconfitta
+ep_face   equ 0C068h    ; 0 = guarda a destra, 1 = a sinistra
 room_map  equ 0C100h    ; copia RAM della stanza (768 byte)
 
 ; ============================================================
@@ -68,10 +69,11 @@ ep_start:
         call WRTVDP
         di                  ; WRTVDP del BIOS puo' riabilitare gli
                             ; interrupt: i caricamenti vanno protetti
-        ; sprite dell'episodio: Ulisse 16x24 (2 meta' x layer) + mano
+        ; sprite dell'episodio: Ulisse 16x24, 7 pose x 5 pattern
+        ; (frontale + profili destra/sinistra) + mano = 37 pattern
         ld  hl,ep_sprites
         ld  de,VR_SPRP
-        ld  bc,17*32
+        ld  bc,37*32
         call vdp_copy
         ; tileset della caverna nei 3 terzi (pattern + colori)
         ld  hl,cave_pat
@@ -156,6 +158,17 @@ ep_input:
 .dir:
         ld  a,b
         ld  (ep_mov),a
+        ; la direzione di sguardo segue il movimento
+        cp  1
+        jr  nz,.nfr
+        xor a
+        ld  (ep_face),a
+.nfr:
+        cp  2
+        jr  nz,.nfl
+        ld  a,1
+        ld  (ep_face),a
+.nfl:
         ; salto: fronte di salita di FIRE, solo a terra
         call read_trig
         cp  0FFh
@@ -785,23 +798,36 @@ ep_isr:
         jr  z,.nob
         ld  d,209           ; colpito: lampeggia tutto (giu' = 225)
 .nob:
-        ; C = pattern base dell'animazione (fermo/passo/salto)
+        ; C = base della posa. REGOLA DEI PLATFORM: frontale solo
+        ; da fermo; in movimento e in volo e' DI PROFILO nella
+        ; direzione di marcia (a sinistra: pose specchiate, +60)
         ld  a,(ep_ong)
         or  a
         jr  nz,.gr
-        ld  c,40
-        jr  .pat
+        ld  c,60            ; salto, di profilo
+        jr  .face
 .gr:
         ld  a,(ep_mov)
         or  a
         jr  z,.st
         ld  a,(frame_cnt)
         and 8
-        jr  z,.st
-        ld  c,20
-        jr  .pat
+        jr  z,.wb
+        ld  c,20            ; falcata
+        jr  .face
+.wb:
+        ld  c,40            ; passo raccolto
+        jr  .face
 .st:
-        ld  c,0
+        ld  c,0             ; fermo: frontale, il viso al giocatore
+        jr  .pat
+.face:
+        ld  a,(ep_face)
+        or  a
+        jr  z,.pat
+        ld  a,c
+        add a,60            ; versione specchiata
+        ld  c,a
 .pat:
         ld  a,(ep_xh)
         ld  e,a
@@ -860,7 +886,7 @@ ep_isr:
         out (098h),a
         ld  a,(hand_xx)
         out (098h),a
-        ld  a,60
+        ld  a,140
         out (098h),a
         ld  a,10
         out (098h),a
@@ -869,7 +895,7 @@ ep_isr:
         ld  a,(hand_xx)
         add a,16
         out (098h),a
-        ld  a,64
+        ld  a,144
         out (098h),a
         ld  a,10
         out (098h),a
