@@ -69,63 +69,96 @@ POLI_W, POLI_H = 6, 9   # in tile (48x72 pixel)
 
 
 def draw_polifemo(eye_open):
-    """Griglia 48x72 di indici colore (0 = sfondo nero)."""
+    """Il VOLTO gigante di Polifemo che incombe dal buio (48x72),
+    dal riferimento di Fausto: chioma e barba NERE a ricci attorno a
+    un viso chiaro, monociglio, l'occhio unico centrale, baffi e la
+    bocca d'ORO; spalle bronzee in basso."""
     g = [[0] * 48 for _ in range(72)]
+    K, W, GOLD, SKIN = 1, 15, 10, 10
 
-    def disc(cx, cy, r, c):
-        for y in range(max(0, cy - r), min(72, cy + r + 1)):
-            for x in range(max(0, cx - r), min(48, cx + r + 1)):
-                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+    def disc(cx, cy, rx, ry, c):
+        for y in range(max(0, cy - ry), min(72, cy + ry + 1)):
+            for x in range(max(0, cx - rx), min(48, cx + rx + 1)):
+                if ((x - cx) * ry) ** 2 + ((y - cy) * rx) ** 2 \
+                        <= (rx * ry) ** 2:
                     g[y][x] = c
 
-    disc(22, 16, 14, C_BODY)                    # testa
-    for y in range(26, 34):                     # barba
-        for x in range(10, 36):
-            if (x + y) % 3:
-                g[y][x] = C_HAIR
-    for y in range(4, 9):                       # ciuffo
-        for x in range(14, 32):
-            if (x + y) % 2:
-                g[y][x] = C_HAIR
-    disc(22, 48, 17, C_BODY)                    # corpo
-    for y in range(40, 52):                     # braccio verso destra
-        for x in range(34, 48):
-            if (y - 40) + (47 - x) < 12:
-                g[y][x] = C_BODY
-    for y in range(62, 72):                     # gambe raccolte
-        for x in range(6, 40):
-            g[y][x] = C_BODY if (y < 68 or (x + y) % 3) else C_HAIR
+    # la chioma: massa nera con ricci sul bordo
+    disc(24, 16, 20, 14, K)
+    for cx, cy in ((5, 14), (10, 6), (18, 3), (30, 3), (38, 6),
+                   (43, 14), (4, 24), (44, 24)):
+        disc(cx, cy, 5, 5, K)
+    # il viso chiaro (ampio: guance visibili sotto l'occhio)
+    disc(24, 26, 14, 15, W)
+    # monociglio: arco nero sopra l'occhio
+    for x in range(13, 36):
+        yb = 13 + abs(x - 24) // 6
+        for y in range(yb, yb + 3):
+            g[y][x] = K
+    # naso
+    for y in range(24, 31):
+        for x in range(22, 26):
+            g[y][x] = K if x in (22, 25) else W
+    # baffi a onda
+    for x in range(12, 37):
+        yb = 31 + (1 if 17 < x < 31 else 0)
+        for y in range(yb, yb + 2):
+            g[y][x] = K
+    # la bocca d'oro
+    for y in range(34, 37):
+        for x in range(19, 30):
+            g[y][x] = GOLD
+    # la barba: massone nero a ricci (i buchi sono la texture)
+    for y in range(37, 62):
+        half = 23 - max(0, (y - 48)) * 3 // 4
+        for x in range(24 - half, 24 + half):
+            if 0 <= x < 48:
+                if ((x * 7 + y * 13) % 11) != 0:
+                    g[y][x] = K
+    # ricci finali della barba
+    for cx, cy in ((10, 58), (18, 62), (26, 63), (34, 60)):
+        disc(cx, cy, 4, 4, K)
+    # spalle bronzee
+    for y in range(62, 72):
+        for x in range(2, 46):
+            if abs(x - 24) < 12 + (y - 62):
+                if g[y][x] == 0:
+                    g[y][x] = SKIN
     # l'occhio unico: regione 16x8 ai blocchi (2,2)-(3,2)
     for y in range(16, 24):
         for x in range(16, 32):
-            if eye_open:
-                g[y][x] = 15                    # sbarrato, bianco
-            else:
-                g[y][x] = C_BODY
+            if 17 <= x <= 30:
+                g[y][x] = W
     if eye_open:
-        disc(24, 19, 3, 8)                      # pupilla iniettata
+        disc(24, 20, 5, 3, K)                   # orbita spalancata
+        disc(24, 20, 4, 3, 8)                   # iride iniettata
+        disc(24, 20, 1, 1, K)                   # pupilla
     else:
-        for x in range(17, 31):                 # palpebra chiusa
-            g[19][x] = C_HAIR
+        for x in range(17, 31):                 # palpebra pesante
+            g[18][x] = K
+            g[19][x] = K
+        for x in range(18, 30, 3):              # ciglia
+            g[20][x] = K
     return g
 
 
 def grid_tile(g, bx, by):
-    """Blocco 8x8 -> (pattern, colori); un fg per riga, bg nero."""
+    """Blocco 8x8 -> (pattern, colori); per ogni riga 8x1 il fg e'
+    il colore non-sfondo piu' frequente (vincolo SCREEN 2)."""
     pat, col = [], []
     for y in range(8):
         row = g[by * 8 + y][bx * 8:bx * 8 + 8]
-        fg = 0
+        freq = {}
         for c in row:
             if c:
-                fg = c
-                break
+                freq[c] = freq.get(c, 0) + 1
+        fg = max(freq, key=freq.get) if freq else 1
         b = 0
         for i, c in enumerate(row):
             if c:
                 b |= 0x80 >> i
         pat.append(b)
-        col.append(((fg if fg else 1) << 4) | 4)
+        col.append((fg << 4) | 4)
     return pat, col
 
 
