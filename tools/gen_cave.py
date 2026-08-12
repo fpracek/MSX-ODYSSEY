@@ -65,100 +65,126 @@ SOLID = {1, 2, 3, 4}
 EXIT = {7}
 
 POLI_T0 = 20            # primo tile del ciclope
-POLI_W, POLI_H = 6, 9   # in tile (48x72 pixel)
+POLI_W, POLI_H = 10, 12  # in tile (80x96 pixel: un COLOSSO)
+# l'occhio: blocco di 3x2 tile (24x16 px) con indici dedicati e
+# contigui, cosi' lo swap dorme/sveglio riscrive 6 tile in fila
+EYE_BX, EYE_BY, EYE_BW, EYE_BH = 3, 3, 3, 2
+EYE_POS = [(bx, by) for by in range(EYE_BY, EYE_BY + EYE_BH)
+           for bx in range(EYE_BX, EYE_BX + EYE_BW)]
 
 
 def draw_polifemo(eye_open):
-    """Il VOLTO gigante di Polifemo che incombe dal buio (48x72),
-    dal riferimento di Fausto: chioma e barba NERE a ricci attorno a
-    un viso chiaro, monociglio, l'occhio unico centrale, baffi e la
-    bocca d'ORO; spalle bronzee in basso."""
-    g = [[0] * 48 for _ in range(72)]
-    K, W, GOLD, SKIN = 1, 15, 10, 10
+    """Il COLOSSO: volto di Polifemo a 80x96, dal riferimento di
+    Fausto (la maschera): chioma e barba nere a ricci, viso chiaro
+    pieno, monociglio, naso lungo, baffi a onda, la bocca d'ORO,
+    spalle bronzee - e l'occhio unico ENORME al centro."""
+    g = [[0] * 80 for _ in range(96)]
+    K, W, GOLD, SKIN, GRAY = 1, 15, 10, 10, 14
 
     def disc(cx, cy, rx, ry, c):
-        for y in range(max(0, cy - ry), min(72, cy + ry + 1)):
-            for x in range(max(0, cx - rx), min(48, cx + rx + 1)):
+        for y in range(max(0, cy - ry), min(96, cy + ry + 1)):
+            for x in range(max(0, cx - rx), min(80, cx + rx + 1)):
                 if ((x - cx) * ry) ** 2 + ((y - cy) * rx) ** 2 \
                         <= (rx * ry) ** 2:
                     g[y][x] = c
 
-    # la chioma: massa nera con ricci sul bordo
-    disc(24, 16, 20, 14, K)
-    for cx, cy in ((5, 14), (10, 6), (18, 3), (30, 3), (38, 6),
-                   (43, 14), (4, 24), (44, 24)):
-        disc(cx, cy, 5, 5, K)
-    # il viso chiaro (ampio: guance visibili sotto l'occhio)
-    disc(24, 26, 14, 15, W)
-    # monociglio: arco nero sopra l'occhio
-    for x in range(13, 36):
-        yb = 13 + abs(x - 24) // 6
-        for y in range(yb, yb + 3):
+    # la chioma: massa nera con ricci grossi sul bordo
+    disc(40, 24, 35, 24, K)
+    for cx, cy in ((8, 20), (16, 9), (28, 3), (40, 1), (52, 3),
+                   (64, 9), (72, 20), (4, 36), (76, 36)):
+        disc(cx, cy, 8, 8, K)
+    # il viso chiaro, pieno
+    disc(40, 42, 24, 27, W)
+    # ombre laterali delle guance (grigio: profondita')
+    disc(20, 52, 3, 7, GRAY)
+    disc(60, 52, 3, 7, GRAY)
+    # monociglio: arco nero spesso, aggrottato sull'occhio
+    for x in range(16, 65):
+        yb = 18 + abs(x - 40) // 5
+        for y in range(yb, yb + 5):
             g[y][x] = K
-    # naso
-    for y in range(24, 31):
-        for x in range(22, 26):
-            g[y][x] = K if x in (22, 25) else W
+    # naso lungo con le narici
+    for y in range(40, 54):
+        for x in range(36, 45):
+            if x in (36, 44) or y > 51:
+                g[y][x] = K
+            elif g[y][x] == 0:
+                g[y][x] = W
+    for y in range(51, 54):
+        g[y][34] = K
+        g[y][46] = K
     # baffi a onda
-    for x in range(12, 37):
-        yb = 31 + (1 if 17 < x < 31 else 0)
-        for y in range(yb, yb + 2):
+    for x in range(18, 63):
+        yb = 56 + (2 if 28 < x < 52 else 0)
+        for y in range(yb, yb + 4):
             g[y][x] = K
-    # la bocca d'oro
-    for y in range(34, 37):
-        for x in range(19, 30):
+    # la bocca d'ORO spalancata
+    for y in range(61, 67):
+        for x in range(30, 50):
             g[y][x] = GOLD
     # la barba: massone nero a ricci (i buchi sono la texture)
-    for y in range(37, 62):
-        half = 23 - max(0, (y - 48)) * 3 // 4
-        for x in range(24 - half, 24 + half):
-            if 0 <= x < 48:
+    for y in range(66, 90):
+        half = 36 - max(0, (y - 74)) * 3 // 2
+        for x in range(40 - half, 40 + half):
+            if 0 <= x < 80:
                 if ((x * 7 + y * 13) % 11) != 0:
                     g[y][x] = K
-    # ricci finali della barba
-    for cx, cy in ((10, 58), (18, 62), (26, 63), (34, 60)):
-        disc(cx, cy, 4, 4, K)
+    # boccoli finali della barba
+    for cx, cy in ((14, 82), (26, 88), (40, 90), (54, 88), (66, 82)):
+        disc(cx, cy, 6, 6, K)
     # spalle bronzee
-    for y in range(62, 72):
-        for x in range(2, 46):
-            if abs(x - 24) < 12 + (y - 62):
+    for y in range(88, 96):
+        for x in range(2, 78):
+            if abs(x - 40) < 22 + (y - 88) * 2:
                 if g[y][x] == 0:
                     g[y][x] = SKIN
-    # l'occhio unico: regione 16x8 ai blocchi (2,2)-(3,2)
-    for y in range(16, 24):
-        for x in range(16, 32):
-            if 17 <= x <= 30:
-                g[y][x] = W
+    # ---- L'OCCHIO (regione 24x16: blocchi EYE_POS) ----
+    for y in range(24, 40):
+        for x in range(24, 48):
+            g[y][x] = W
     if eye_open:
-        disc(24, 20, 5, 3, K)                   # orbita spalancata
-        disc(24, 20, 4, 3, 8)                   # iride iniettata
-        disc(24, 20, 1, 1, K)                   # pupilla
+        disc(36, 32, 11, 7, K)                  # orbita spalancata
+        disc(36, 32, 10, 6, W)                  # sclera
+        disc(36, 32, 6, 6, 8)                   # iride ROSSA, enorme
+        disc(36, 32, 2, 2, K)                   # pupilla
+        g[29][33] = W                           # riflesso
+        g[29][34] = W
     else:
-        for x in range(17, 31):                 # palpebra pesante
-            g[18][x] = K
-            g[19][x] = K
-        for x in range(18, 30, 3):              # ciglia
-            g[20][x] = K
+        for x in range(26, 47):                 # palpebra pesante
+            yb = 30 + abs(x - 36) // 8
+            g[yb][x] = K
+            g[yb + 1][x] = K
+        for x in range(27, 46, 4):              # ciglia in giu'
+            g[33][x] = K
+            g[34][x] = K
     return g
 
 
 def grid_tile(g, bx, by):
-    """Blocco 8x8 -> (pattern, colori); per ogni riga 8x1 il fg e'
-    il colore non-sfondo piu' frequente (vincolo SCREEN 2)."""
+    """Blocco 8x8 -> (pattern, colori). Per ogni riga 8x1 si scelgono
+    i DUE colori piu' frequenti (bg il primo, fg il secondo): e' il
+    massimo che SCREEN 2 concede, e rende il viso pieno coi dettagli
+    sopra invece di pixel su fondo indaco. Gli altri colori vengono
+    rimappati per luminanza (0 = sfondo indaco)."""
+    from gen_map import LUM
     pat, col = [], []
     for y in range(8):
-        row = g[by * 8 + y][bx * 8:bx * 8 + 8]
+        row = [c if c else 4 for c in g[by * 8 + y][bx * 8:bx * 8 + 8]]
         freq = {}
         for c in row:
-            if c:
-                freq[c] = freq.get(c, 0) + 1
-        fg = max(freq, key=freq.get) if freq else 1
+            freq[c] = freq.get(c, 0) + 1
+        order = sorted(freq, key=lambda c: -freq[c])
+        bg = order[0]
+        fg = order[1] if len(order) > 1 else 1
         b = 0
         for i, c in enumerate(row):
-            if c:
+            if c != bg and c != fg:
+                c = fg if abs(LUM[c] - LUM[fg]) < \
+                    abs(LUM[c] - LUM[bg]) else bg
+            if c == fg:
                 b |= 0x80 >> i
         pat.append(b)
-        col.append((fg << 4) | 4)
+        col.append((fg << 4) | bg)
     return pat, col
 
 
@@ -210,10 +236,10 @@ ROOM_CAVE = [
     '#                              #',
     '#                         -----#',
     '#                              #',
-    '#P                  -----      #',
+    '#                   -----      #',
     '#                              #',
     '#             -----            #',
-    '#        *                     #',
+    '#P       *                     #',
     '#                   -----      #',
     '#                              #',
     '#             -----     *      #',
@@ -246,10 +272,14 @@ def build_room(art):
                 tiles.append(LEGEND[ch])
     if anchor:
         ax, ay = anchor
+        eye_t0 = POLI_T0 + POLI_W * POLI_H
         for by in range(POLI_H):
             for bx in range(POLI_W):
-                tiles[(ay - POLI_H + 1 + by) * 32 + ax + bx] = \
-                    POLI_T0 + by * POLI_W + bx
+                if (bx, by) in EYE_POS:
+                    t = eye_t0 + EYE_POS.index((bx, by))
+                else:
+                    t = POLI_T0 + by * POLI_W + bx
+                tiles[(ay - POLI_H + 1 + by) * 32 + ax + bx] = t
     return tiles, start, 1 if anchor else 0
 
 
@@ -413,9 +443,9 @@ HAND_R = ['................', '................', '........####....',
 
 
 def main():
-    # tileset: base + polifemo (occhio chiuso)
+    # tileset: base + polifemo (occhio chiuso) + i 6 tile dell'occhio
     npoli = POLI_W * POLI_H
-    n_tiles = POLI_T0 + npoli
+    n_tiles = POLI_T0 + npoli + len(EYE_POS)
     pat = [[0] * 8 for _ in range(n_tiles)]
     col = [[0x14] * 8 for _ in range(n_tiles)]
     for idx, (rows, fg, bg) in BASE_TILES.items():
@@ -432,18 +462,21 @@ def main():
             p, c = grid_tile(closed, bx, by)
             pat[POLI_T0 + by * POLI_W + bx] = p
             col[POLI_T0 + by * POLI_W + bx] = c
-    # occhio: blocchi (2,2) e (3,2) della figura
-    eye_i0 = POLI_T0 + 2 * POLI_W + 2
+    # l'occhio: 6 tile dedicati e CONTIGUI (dopo la figura), cosi'
+    # lo swap dorme/sveglio e' una riscrittura in fila
+    eye_i0 = POLI_T0 + npoli
     opened = draw_polifemo(True)
     eye_open_p, eye_open_c = [], []
     eye_closed_p, eye_closed_c = [], []
-    for bx in (2, 3):
-        p, c = grid_tile(opened, bx, 2)
+    for i, (bx, by) in enumerate(EYE_POS):
+        p, c = grid_tile(opened, bx, by)
         eye_open_p += p
         eye_open_c += c
-        p, c = grid_tile(closed, bx, 2)
+        p, c = grid_tile(closed, bx, by)
         eye_closed_p += p
         eye_closed_c += c
+        pat[eye_i0 + i] = list(p)
+        col[eye_i0 + i] = list(c)
 
     # tipi
     types = [0] * 256

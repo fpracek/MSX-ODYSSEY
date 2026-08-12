@@ -680,30 +680,30 @@ eye_write_di:
         push de
         push hl
         ld  de,VR_PAT+EYE_T0*8
-        ld  bc,16
+        ld  bc,48
         call vdp_copy
         pop hl
         push hl
         ld  de,VR_PAT+0800h+EYE_T0*8
-        ld  bc,16
+        ld  bc,48
         call vdp_copy
         pop hl
         ld  de,VR_PAT+1000h+EYE_T0*8
-        ld  bc,16
+        ld  bc,48
         call vdp_copy
         pop hl
         push hl
         ld  de,VR_COL+EYE_T0*8
-        ld  bc,16
+        ld  bc,48
         call vdp_copy
         pop hl
         push hl
         ld  de,VR_COL+0800h+EYE_T0*8
-        ld  bc,16
+        ld  bc,48
         call vdp_copy
         pop hl
         ld  de,VR_COL+1000h+EYE_T0*8
-        ld  bc,16
+        ld  bc,48
         jp  vdp_copy
 
 ; ------------------------------------------------------------
@@ -995,7 +995,7 @@ eye_write_fast:
         ld  a,b
         or  40h
         out (099h),a
-        ld  b,16
+        ld  b,48
 .wr:
         ld  a,(hl)
         out (098h),a
