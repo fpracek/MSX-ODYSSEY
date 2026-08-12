@@ -135,6 +135,10 @@ def grid_tile(g, bx, by):
 LEGEND = {'#': 1, '=': 2, '-': 3, 's': 4, '~': 5, ' ': 0,
           'E': 7, 'v': 8, '*': 9}
 
+# gradini da 2 righe (16px): l'eroe e' alto 24px e salta ~29px.
+# L'uscita 'E' sta DUE righe sopra la piattaforma d'arrivo (il
+# centro del corpo e' a yh+12). Lo spawn 'U' va a 3 righe piene
+# sopra il pavimento (mai a cavallo di file solide).
 ROOM_BEACH = [
     '################################',
     '#                              #',
@@ -142,23 +146,23 @@ ROOM_BEACH = [
     '#                              #',
     '#                              #',
     '#                              #',
+    '#                            E #',
+    '#                              #',
     '#                          ####',
-    '#                          ###E',
-    '#                        --####',
-    '#                          ####',
-    '#                     --   ####',
-    '#                          ####',
-    '#                 --     ######',
-    '#                        ######',
-    '#             --         ######',
-    '#                        ######',
-    '#         --             ######',
-    '#   U                    ######',
-    '#                        ######',
-    '#sssssssssssssssssss    #######',
-    '#sssssssssssssssssss   ########',
-    '~~ssssssssssssssssss  #########',
-    '~~~~ssssssssssssssss###########',
+    '#                              #',
+    '#                      ----    #',
+    '#                              #',
+    '#                  ----        #',
+    '#                              #',
+    '#              ----            #',
+    '#                              #',
+    '#          ----                #',
+    '#  U                           #',
+    '#      ----                    #',
+    '#                              #',
+    '#ssssssssssssssssssssssssssssss',
+    '#ssssssssssssssssssssssssssssss',
+    '~~~ssssssssssssssssssssssssssss',
     '################################',
 ]
 
@@ -169,22 +173,22 @@ ROOM_CAVE = [
     '#                              #',
     '#                              #',
     '#                              #',
-    '#                            E #',
-    '#                          ----#',
+    '#                           E  #',
     '#                              #',
-    '#                     ----     #',
-    '#P                             #',
-    '#                 ----         #',
+    '#                         -----#',
+    '#                              #',
+    '#P                  -----      #',
+    '#                              #',
+    '#             -----            #',
     '#        *                     #',
-    '#             ----      *      #',
+    '#                   -----      #',
     '#                              #',
-    '#          *          ----     #',
-    '#                              #',
+    '#             -----     *      #',
     '# U                            #',
-    '#                              #',
-    '#                              #',
+    '#        -----                 #',
     '#                              #',
     '================================',
+    '################################',
     '################################',
     '################################',
 ]
@@ -244,52 +248,83 @@ def sprite16(art):
 # separano da soli: sempre coerenti. Il layer bronzo usa lo slot
 # sprite della mano del ciclope: sparisce solo durante gli attacchi,
 # cosi' il limite di 4 sprite/riga del TMS9918 non si supera mai.
+# 16x24: testa+busto (righe 0-15) e gambe (16-23) come due sprite
+# impilati per layer -> le righe non si sovrappongono mai e il
+# limite dei 4 sprite/riga resta intatto.
+# Stile dal riferimento di Fausto: il VISO porta il personaggio -
+# capelli e barba rossicci (R: il nero sparirebbe sul fondo della
+# caverna), pelle bronzea (B) con gli OCCHI neri come spazio
+# negativo, sciarpa/mantello rossi, chitone bianco (W), stivali.
 UL_STAND = ['.....RRRRRR.....',
-            '...RRRRRRRRR....',
-            '..RRRWWWWWWW....',
-            '..RRWWWWWWWWW...',
-            '..RRWWWW.BBWW...',
-            '...RWWWW.BWW....',
-            '....WWWWWWWW....',
-            '.....WWWWWW.....',
-            '....WWWWWWWB....',
-            '....WWWWWWWB....',
-            '....WWWWWWW.....',
-            '....WWWWWWWW....',
+            '....RRRRRRRR....',
+            '...RRRRRRRRRR...',
+            '...RRBBBBBBRR...',
+            '...RBBBBBBBBR...',
+            '...RBB.BB.BBR...',
+            '...RBBBBBBBBR...',
+            '...RBBBBBBBBR...',
+            '....RRRRRRRR....',
+            '...RRRRRRRRRR...',
+            '...RRRRRRRRRR...',
+            '.RRWWWWWWWWWWB..',
+            '.RRWWWWWWWWWWB..',
+            '.RRWWWWWWWWWWB..',
+            '.RRWWWWWWWWWW...',
+            '..RWWWWWWWWWW...',
+            '...WW.WWWW.WW...',
+            '...WW.WWWW.WW...',
+            '....BBB..BBB....',
+            '....BBB..BBB....',
+            '....BBB..BBB....',
             '....WWW..WWW....',
             '....WWW..WWW....',
-            '....WWW..WWW....',
-            '....WWW..WWWW...']
+            '...WWWW..WWWW...']
 UL_WALK = ['.....RRRRRR.....',
-           '...RRRRRRRRR....',
-           '..RRRWWWWWWW....',
-           '..RRWWWWWWWWW...',
-           '..RRWWWW.BBWW...',
-           '...RWWWW.BWW....',
-           '....WWWWWWWW....',
-           '.....WWWWWW.....',
-           '....WWWWWWWB....',
-           '....WWWWWWWB....',
-           '....WWWWWWW.....',
-           '....WWWWWWWW....',
-           '...WWW...WWW....',
-           '...WWW....WWW...',
+           '....RRRRRRRR....',
+           '...RRRRRRRRRR...',
+           '...RRBBBBBBRR...',
+           '...RBBBBBBBBR...',
+           '...RBB.BB.BBR...',
+           '...RBBBBBBBBR...',
+           '...RBBBBBBBBR...',
+           '....RRRRRRRR....',
+           '...RRRRRRRRRR...',
+           '..RRRRRRRRRRR...',
+           'RRRWWWWWWWWWWB..',
+           'RRRWWWWWWWWWWB..',
+           '.RRWWWWWWWWWWB..',
+           '.RRWWWWWWWWWW...',
+           '..RWWWWWWWWWW...',
+           '...WW.WWWW.WW...',
+           '...WW.WWWW.WW...',
+           '...BBB....BBB...',
+           '..BBB......BBB..',
+           '..BBB......BBB..',
            '..WWW......WWW..',
-           '..WWW......WWW..']
-UL_JUMP = ['....RRRRRR......',
-           '..RRRRRRRRR.....',
-           '.RRRRWWWWWWW....',
-           '.RRRWWWWWWWWW...',
-           '..RRWWWW.BBWW...',
-           '...RWWWW.BWW....',
-           '....WWWWWWWW....',
-           '.....WWWWWWB....',
-           '....WWWWWWWB....',
-           '....WWWWWWW.....',
-           '....WWWWWWWW....',
-           '....WWW..WWW....',
-           '....WWW.WWW.....',
-           '.....WW..WW.....',
+           '.WWW........WWW.',
+           '.WWW........WWW.']
+UL_JUMP = ['.....RRRRRR.....',
+           '....RRRRRRRR....',
+           '...RRRRRRRRRR...',
+           '...RRBBBBBBRR...',
+           '...RBBBBBBBBR...',
+           '...RBB.BB.BBR...',
+           '...RBBBBBBBBR...',
+           '...RBBBBBBBBR...',
+           '....RRRRRRRR....',
+           '..RRRRRRRRRRR...',
+           '.RRRRRRRRRRRR...',
+           'RRRWWWWWWWWWWB..',
+           '.RRWWWWWWWWWWB..',
+           '..RWWWWWWWWWW...',
+           '...WWWWWWWWWW...',
+           '...WW.WWWW.WW...',
+           '....BBB..BBB....',
+           '...WWW..WWW.....',
+           '...WWW..WWW.....',
+           '................',
+           '................',
+           '................',
            '................',
            '................']
 
@@ -384,14 +419,19 @@ def main():
     out.append('room_tab:')
     for k in range(len(rooms)):
         out.append('        dw  room%d, room%d_meta' % (k, k))
-    out.append('; sprite: Ulisse a 3 layer (bianco 0/4/8, rosso 12/16/20,')
-    out.append('; bronzo 24/28/32: fermo/passo/salto) + mano (36/40)')
+    out.append('; sprite: Ulisse 16x24 in 2 meta\' x 3 layer. Per frame')
+    out.append('; (base 0/20/40): +0 bianco-su, +4 bianco-giu, +8 rosso-su,')
+    out.append('; +12 bronzo-su, +16 bronzo-giu. Mano: 60/64.')
     out.append('ep_sprites:')
-    layer_arts = []
-    for ch in 'WRB':
-        for art in (UL_STAND, UL_WALK, UL_JUMP):
-            layer_arts.append(ul_layer(art, ch))
-    for art in layer_arts + [HAND_L, HAND_R]:
+    seq = []
+    for art in (UL_STAND, UL_WALK, UL_JUMP):
+        assert len(art) == 24, 'frame da %d righe' % len(art)
+        up = art[:16]
+        dn = art[16:] + ['.' * 16] * 8
+        seq += [ul_layer(up, 'W'), ul_layer(dn, 'W'),
+                ul_layer(up, 'R'),
+                ul_layer(up, 'B'), ul_layer(dn, 'B')]
+    for art in seq + [HAND_L, HAND_R]:
         data = sprite16(art)
         for i in range(0, 32, 16):
             out.append('        db  ' +
@@ -413,16 +453,16 @@ def preview_ulisse():
         from PIL import Image
     except ImportError:
         return
-    img = Image.new('RGB', (3 * 20 + 4, 20), PAL[1])
+    img = Image.new('RGB', (3 * 20 + 4, 28), PAL[1])
     cmap = {'W': 15, 'R': 8, 'B': 10}
     for f, art in enumerate((UL_STAND, UL_WALK, UL_JUMP)):
-        for y in range(16):
+        for y in range(24):
             for x in range(16):
                 if art[y][x] in cmap:
                     img.putpixel((f * 20 + 2 + x, y + 2),
                                  PAL[cmap[art[y][x]]])
     dst = os.path.join(ROOT, 'build', 'ulisse_preview.png')
-    img.resize(((3 * 20 + 4) * 8, 160), Image.NEAREST).save(dst)
+    img.resize(((3 * 20 + 4) * 8, 224), Image.NEAREST).save(dst)
     print('scritta preview %s' % dst)
 
 

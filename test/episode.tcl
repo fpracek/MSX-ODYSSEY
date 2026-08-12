@@ -39,9 +39,10 @@ after time 18 {
             } else {
                 report [format "camminata: FALLITA (x %d -> %d)" $::wx1 $wx2]
             }
-            # teletrasporto sull'uscita della spiaggia
-            debug write memory 0xC052 232
-            debug write memory 0xC054 48
+            # teletrasporto sull'uscita della spiaggia (E a riga 6,
+            # colonna 29: centro corpo = xh+8, yh+12)
+            debug write memory 0xC052 228
+            debug write memory 0xC054 40
         } err]} { report "ERRORE: $err"; exit }
         after time 1 {
             if {[catch {

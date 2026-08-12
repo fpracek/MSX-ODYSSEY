@@ -68,10 +68,10 @@ ep_start:
         call WRTVDP
         di                  ; WRTVDP del BIOS puo' riabilitare gli
                             ; interrupt: i caricamenti vanno protetti
-        ; sprite dell'episodio: Ulisse a 3 layer x 3 frame + mano
+        ; sprite dell'episodio: Ulisse 16x24 (2 meta' x layer) + mano
         ld  hl,ep_sprites
         ld  de,VR_SPRP
-        ld  bc,11*32
+        ld  bc,17*32
         call vdp_copy
         ; tileset della caverna nei 3 terzi (pattern + colori)
         ld  hl,cave_pat
@@ -250,9 +250,9 @@ ep_physics:
         ld  a,(ep_vyh)
         bit 7,a
         jr  nz,.rising
-        ; scende (o fermo): i piedi toccano?
+        ; scende (o fermo): i piedi toccano? (alto 24)
         ld  a,(ep_yh)
-        add a,16
+        add a,24
         ld  c,a
         ld  a,(ep_xh)
         add a,3
@@ -261,7 +261,7 @@ ep_physics:
         cp  1
         jr  z,.land
         ld  a,(ep_yh)
-        add a,16
+        add a,24
         ld  c,a
         ld  a,(ep_xh)
         add a,12
@@ -274,9 +274,9 @@ ep_physics:
         jr  .exitchk
 .land:
         ld  a,(ep_yh)
-        add a,16
+        add a,24
         and 0F8h
-        sub 16
+        sub 24
         ld  (ep_yh),a
         xor a
         ld  (ep_yl),a
@@ -332,9 +332,9 @@ ep_physics:
         ld  (ep_vyl),a
         ld  (ep_vyh),a
 .exitchk:
-        ; il centro tocca l'uscita?
+        ; il centro del corpo tocca l'uscita? (alto 24: centro +12)
         ld  a,(ep_yh)
-        add a,8
+        add a,12
         ld  c,a
         ld  a,(ep_xh)
         add a,8
@@ -353,10 +353,11 @@ ep_physics:
 .nextroom:
         jp  ep_load_room
 
-; lato: B=px gia' pronto; controlla a yh+3 e yh+13; NZ = muro
+; lato: B=px gia' pronto; controlla a yh+4 e yh+20 (alto 24);
+; Z = muro
 side_solid:
         ld  a,(ep_yh)
-        add a,3
+        add a,4
         ld  c,a
         push bc
         call tile_type
@@ -364,7 +365,7 @@ side_solid:
         cp  1
         ret z
         ld  a,(ep_yh)
-        add a,13
+        add a,20
         ld  c,a
         call tile_type
         cp  1
@@ -491,7 +492,7 @@ ep_cyclops:
         or  a
         ret nz
         ld  a,(ep_yh)
-        cp  HAND_Y-14
+        cp  HAND_Y-22       ; il corpo (24px) arriva alla mano?
         ret c
         ld  a,(ep_xh)
         add a,8
@@ -767,10 +768,12 @@ ep_isr:
         out (099h),a
         ld  a,(high VR_SPRA)|40h
         out (099h),a
-        ; sprite 0-2: Ulisse a 3 LAYER (bianco / rosso cimiero e
-        ; mantello / bronzo). Il layer bronzo usa lo slot della
-        ; mano: quando il ciclope attacca cede il posto, e il
-        ; limite di 4 sprite/riga non si supera mai.
+        ; Ulisse 16x24: due meta' impilate per layer (le righe non
+        ; si sovrappongono: mai piu' di 3 sprite/riga sopra, 2
+        ; sotto). I layer BRONZO usano gli slot della mano: quando
+        ; il ciclope attacca cedono il posto - limite mai superato.
+        ; slot: 0=bianco-su 1=bianco-giu 2=rosso-su
+        ;       3=bronzo-su/manoSX 4=bronzo-giu/manoDX
         ld  a,(ep_yh)
         dec a
         ld  d,a
@@ -780,13 +783,13 @@ ep_isr:
         ld  a,(frame_cnt)
         and 2
         jr  z,.nob
-        ld  d,209           ; colpito: lampeggiano tutti i layer
+        ld  d,209           ; colpito: lampeggia tutto (giu' = 225)
 .nob:
         ; C = pattern base dell'animazione (fermo/passo/salto)
         ld  a,(ep_ong)
         or  a
         jr  nz,.gr
-        ld  c,8
+        ld  c,40
         jr  .pat
 .gr:
         ld  a,(ep_mov)
@@ -795,14 +798,14 @@ ep_isr:
         ld  a,(frame_cnt)
         and 8
         jr  z,.st
-        ld  c,4
+        ld  c,20
         jr  .pat
 .st:
         ld  c,0
 .pat:
         ld  a,(ep_xh)
         ld  e,a
-        ld  a,d             ; layer bianco
+        ld  a,d             ; 0: bianco-su
         out (098h),a
         ld  a,e
         out (098h),a
@@ -810,32 +813,46 @@ ep_isr:
         out (098h),a
         ld  a,15
         out (098h),a
-        ld  a,d             ; layer rosso
+        ld  a,d             ; 1: bianco-giu
+        add a,16
+        out (098h),a
+        ld  a,e
+        out (098h),a
+        ld  a,c
+        add a,4
+        out (098h),a
+        ld  a,15
+        out (098h),a
+        ld  a,d             ; 2: rosso-su
+        out (098h),a
+        ld  a,e
+        out (098h),a
+        ld  a,c
+        add a,8
+        out (098h),a
+        ld  a,8
+        out (098h),a
+        ld  a,(cyc_state)   ; slot 3-4: bronzo... o la mano
+        cp  2
+        jr  z,.hand
+        ld  a,d             ; 3: bronzo-su
         out (098h),a
         ld  a,e
         out (098h),a
         ld  a,c
         add a,12
         out (098h),a
-        ld  a,8
+        ld  a,10
         out (098h),a
-        ld  a,(cyc_state)   ; slot 2: bronzo... o la mano
-        cp  2
-        jr  z,.hand
-        ld  a,d
+        ld  a,d             ; 4: bronzo-giu
+        add a,16
         out (098h),a
         ld  a,e
         out (098h),a
         ld  a,c
-        add a,24
+        add a,16
         out (098h),a
         ld  a,10
-        out (098h),a
-        ld  a,209           ; slot 3: nascosto
-        out (098h),a
-        xor a
-        out (098h),a
-        out (098h),a
         out (098h),a
         jr  .term
 .hand:
@@ -843,7 +860,7 @@ ep_isr:
         out (098h),a
         ld  a,(hand_xx)
         out (098h),a
-        ld  a,36
+        ld  a,60
         out (098h),a
         ld  a,10
         out (098h),a
@@ -852,7 +869,7 @@ ep_isr:
         ld  a,(hand_xx)
         add a,16
         out (098h),a
-        ld  a,40
+        ld  a,64
         out (098h),a
         ld  a,10
         out (098h),a
