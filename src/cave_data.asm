@@ -432,6 +432,34 @@ eye_blind_col:
         db  01Fh,08Fh,08Fh,08Fh,08Fh,08Fh,081h,081h,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh,0F1h
         db  0F1h,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh,08Fh,08Fh,08Fh,08Fh,08Fh,08Fh,01Fh,01Fh
         db  08Fh,08Fh,08Fh,08Fh,08Fh,01Fh,08Fh,01Fh,0F1h,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh
+PAIN_BROW_T0 equ 58
+PAIN_BROW_N equ 8
+pain_brow_pat:
+        db  0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,001h,003h,0FFh,0FFh,0FFh,0FFh
+        db  080h,0C0h,007h,080h,0FFh,0FFh,007h,080h,007h,080h,0FFh,0FFh,007h,080h,000h,000h
+        db  00Fh,0FFh,0FFh,0FFh,00Fh,000h,000h,000h,080h,081h,00Fh,0FFh,0FFh,0FFh,00Fh,000h
+        db  0FFh,080h,0C0h,0E0h,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh,0FFh
+pain_brow_col:
+        db  011h,011h,011h,011h,011h,011h,011h,011h,011h,011h,0F1h,0F1h,011h,011h,011h,011h
+        db  01Fh,0FEh,01Fh,0F1h,011h,011h,0F1h,01Fh,01Eh,0F1h,011h,011h,0F1h,01Fh,01Fh,01Fh
+        db  0E1h,011h,011h,011h,01Fh,01Fh,01Fh,01Fh,0EFh,0FEh,0F1h,011h,011h,011h,01Fh,01Fh
+        db  011h,0F1h,0F1h,0F1h,011h,011h,011h,011h,011h,011h,011h,011h,011h,011h,011h,011h
+PAIN_MA_T0 equ 132
+PAIN_MA_N equ 4
+pain_ma_pat:
+        db  0FFh,01Ch,01Ch,00Fh,0E0h,01Fh,0C0h,01Fh,0FFh,0CCh,0E2h,000h,000h,000h,000h,000h
+        db  080h,033h,022h,000h,000h,000h,000h,000h,0FFh,033h,01Ch,007h,0C0h,01Fh,0E0h,01Fh
+pain_ma_col:
+        db  011h,01Fh,01Fh,0AFh,0FAh,0AFh,0FAh,0AFh,011h,0AFh,0A6h,016h,016h,016h,016h,016h
+        db  0A1h,0FAh,0F6h,016h,016h,016h,016h,016h,011h,0F1h,01Fh,0FAh,06Ah,0A6h,06Ah,0A6h
+PAIN_MB_T0 equ 144
+PAIN_MB_N equ 4
+pain_mb_pat:
+        db  0E0h,0E0h,023h,008h,0FFh,008h,080h,002h,000h,000h,033h,080h,020h,0FFh,011h,0FFh
+        db  000h,000h,033h,000h,084h,080h,002h,040h,0C1h,007h,0E0h,020h,080h,010h,0FFh,020h
+pain_mb_col:
+        db  01Ah,01Ah,0A1h,041h,011h,0E1h,041h,041h,016h,016h,06Fh,01Ah,0F1h,011h,041h,011h
+        db  016h,016h,06Fh,01Ah,0A1h,0F1h,041h,041h,06Ah,01Ah,0F1h,041h,0E1h,041h,011h,0E1h
         ALIGN 256
 type_tab:
         db  000h,001h,001h,001h,001h,000h,000h,002h,000h,000h,003h,000h,000h,003h,000h,000h

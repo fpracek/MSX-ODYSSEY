@@ -113,11 +113,17 @@ def draw_polifemo(eye_state):
     # ombre laterali delle guance (profondita')
     disc(24, 64, 4, 10, GRAY)
     disc(72, 64, 4, 10, GRAY)
-    # monociglio: arco nero spesso, aggrottato sull'occhio
+    # monociglio: arco nero spesso, aggrottato sull'occhio;
+    # nel DOLORE si inarca all'insu', stretto e ripido
     for x in range(20, 77):
-        yb = 27 + abs(x - 48) // 5
-        for y in range(yb, yb + 5):
-            g[y][x] = K
+        if eye_state == 2:
+            yb = 24 + abs(x - 48) // 4
+            for y in range(yb, min(yb + 4, 32)):
+                g[y][x] = K
+        else:
+            yb = 27 + abs(x - 48) // 5
+            for y in range(yb, yb + 5):
+                g[y][x] = K
     # naso lungo con le narici
     for y in range(48, 66):
         for x in range(43, 54):
@@ -135,17 +141,39 @@ def draw_polifemo(eye_state):
         yb = 68 + (2 if 34 < x < 62 else 0)
         for y in range(yb, yb + 5):
             g[y][x] = K
-    # la bocca d'ORO spalancata, con la linea scura in mezzo
-    for y in range(74, 81):
-        for x in range(36, 60):
-            g[y][x] = GOLD
-    for x in range(38, 58):
-        g[77][x] = K
+    if eye_state == 2:
+        # la bocca SPALANCATA nell'urlo: gola rosso cupo in un
+        # ovale d'oro che squarcia baffi e barba, denti in vista
+        for y in range(72, 85):
+            for x in range(34, 63):
+                d2 = ((x - 48) * 6) ** 2 + ((y - 78) * 14) ** 2
+                if d2 <= (14 * 6) ** 2:
+                    if d2 > (14 * 6 - 20) ** 2:
+                        g[y][x] = GOLD
+                    else:
+                        g[y][x] = 6         # la gola
+        for x in range(38, 59, 4):          # i denti superiori
+            g[73][x] = W
+            g[73][x + 1] = W
+            g[74][x] = W
+        for x in range(40, 57, 4):          # e gli inferiori
+            g[82][x] = W
+            g[82][x + 1] = W
+    else:
+        # la bocca d'ORO spalancata, con la linea scura in mezzo
+        for y in range(74, 81):
+            for x in range(36, 60):
+                g[y][x] = GOLD
+        for x in range(38, 58):
+            g[77][x] = K
     # la barba: massone nero a ricci, con ciocche d'argento
     for y in range(80, 106):
         half = 43 - max(0, (y - 88)) * 3 // 2
         for x in range(48 - half, 48 + half):
             if 0 <= x < 96:
+                if eye_state == 2 and ((x - 48) * 6) ** 2 + \
+                        ((y - 78) * 14) ** 2 <= (14 * 6) ** 2:
+                    continue                # la bocca resta aperta
                 if ((x * 7 + y * 13) % 11) != 0:
                     g[y][x] = GRAY if ((x * 5 + y * 7) % 31) == 0 \
                         else K
@@ -581,6 +609,20 @@ def main():
         pat[eye_i0 + i] = list(p)
         col[eye_i0 + i] = list(c)
 
+    # il VOLTO DEL DOLORE: dopo la stoccata anche sopracciglio e
+    # bocca cambiano (riscritti a runtime, un blocco per frame).
+    # Ogni blocco e' una corsa di tile CONTIGUI della figura.
+    PAIN_BLOCKS = [('brow', 3, 2, 9), ('ma', 9, 4, 7), ('mb', 10, 4, 7)]
+    pain_data = {}
+    for name, by, bx0, bx1 in PAIN_BLOCKS:
+        pp, cc = [], []
+        for bx in range(bx0, bx1 + 1):
+            p, c = grid_tile(blinded, bx, by)
+            pp += p
+            cc += c
+        pain_data[name] = (POLI_T0 + by * POLI_W + bx0,
+                           bx1 - bx0 + 1, pp, cc)
+
     # tipi
     types = [0] * 256
     for t in SOLID:
@@ -643,6 +685,13 @@ def main():
     out.extend(db_lines(eye_blind_p))
     out.append('eye_blind_col:')
     out.extend(db_lines(eye_blind_c))
+    for name, (t0, cnt, pp, cc) in pain_data.items():
+        out.append('PAIN_%s_T0 equ %d' % (name.upper(), t0))
+        out.append('PAIN_%s_N equ %d' % (name.upper(), cnt))
+        out.append('pain_%s_pat:' % name)
+        out.extend(db_lines(pp))
+        out.append('pain_%s_col:' % name)
+        out.extend(db_lines(cc))
     out.append('        ALIGN 256')
     out.append('type_tab:')
     out.extend(db_lines(types))

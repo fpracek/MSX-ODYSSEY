@@ -76,6 +76,8 @@ ep_blind  equ 0C077h    ; 1 = accecato: furia cieca, uscita accesa
 nt_qoff   equ 0C078h    ; coda di poke alla name table (dw offset)
 nt_qval   equ 0C07Ah    ; valore da scrivere
 nt_qcnt   equ 0C07Bh    ; celle (passo 32 = in colonna); 0 = vuota
+pain_step equ 0C07Ch    ; volto del dolore: 3 sopracciglio,
+                        ; 2 bocca-su, 1 bocca-giu (uno per frame)
 room_map  equ 0C100h    ; copia RAM della stanza (768 byte)
 
 STK_COL  equ 15         ; colonna HUD dell'icona del palo
@@ -664,6 +666,7 @@ ep_stab:
         ld  (ep_blind),a
         ld  a,3
         ld  (ep_eyed),a     ; l'occhio ferito (lo scrive l'ISR)
+        ld  (pain_step),a   ; ...e il volto si contrae dal dolore
         ld  a,2
         ld  (cyc_state),a   ; furia: la mano spazza per sempre
         ld  a,HAND_MIN
@@ -1282,7 +1285,37 @@ ep_isr:
         call eye_write_fast
         xor a
         ld  (ep_eyed),a
+        jr  .nopain         ; un blocco VRAM per frame, non due
 .noeye:
+        ; --- il volto del dolore: un blocco per frame ---
+        ld  a,(pain_step)
+        or  a
+        jr  z,.nopain
+        dec a
+        ld  (pain_step),a
+        cp  2
+        jr  z,.pbrow
+        cp  1
+        jr  z,.pma
+        ld  hl,pain_mb_pat  ; passo 1: bocca, meta' inferiore
+        ld  de,pain_mb_col
+        ld  a,PAIN_MB_T0
+        ld  c,PAIN_MB_N
+        jr  .pgo
+.pbrow:
+        ld  hl,pain_brow_pat ; passo 3: il sopracciglio inarcato
+        ld  de,pain_brow_col
+        ld  a,PAIN_BROW_T0
+        ld  c,PAIN_BROW_N
+        jr  .pgo
+.pma:
+        ld  hl,pain_ma_pat  ; passo 2: bocca, meta' superiore
+        ld  de,pain_ma_col
+        ld  a,PAIN_MA_T0
+        ld  c,PAIN_MA_N
+.pgo:
+        call tile_write_fast
+.nopain:
         ; --- HUD: ciurma + barra del RUMORE ---
         ld  a,(ep_hud)
         or  a
@@ -1379,6 +1412,75 @@ eye_write_fast:
         pop hl
         ret
 
+; scrive C tile CONTIGUI nei 3 terzi: A = primo tile, C = numero,
+; HL = pattern (C*8 byte), DE = colori (C*8 byte). Da ISR (vblank).
+tile_write_fast:
+        push de             ; sorgente colori, per dopo
+        push hl
+        ld  h,0
+        ld  l,a
+        add hl,hl
+        add hl,hl
+        add hl,hl           ; HL = tile*8
+        ld  d,h
+        ld  e,l
+        pop hl              ; sorgente pattern
+        push de
+        ld  a,d
+        add a,high VR_PAT
+        ld  d,a
+        call .runs
+        pop de
+        push de
+        ld  a,d
+        add a,high (VR_PAT+0800h)
+        ld  d,a
+        call .runs
+        pop de
+        push de
+        ld  a,d
+        add a,high (VR_PAT+1000h)
+        ld  d,a
+        call .runs
+        pop de
+        pop hl              ; ora i colori
+        push de
+        ld  a,d
+        add a,high VR_COL
+        ld  d,a
+        call .runs
+        pop de
+        push de
+        ld  a,d
+        add a,high (VR_COL+0800h)
+        ld  d,a
+        call .runs
+        pop de
+        ld  a,d
+        add a,high (VR_COL+1000h)
+        ld  d,a
+        jp  .runs           ; l'ultima corsa ritorna al chiamante
+.runs:                      ; DE = VRAM, HL = sorgente (preservata)
+        push hl
+        ld  a,e
+        out (099h),a
+        ld  a,d
+        or  40h
+        out (099h),a
+        ld  b,c
+.rt:
+        push bc
+        ld  b,8
+.rb:
+        ld  a,(hl)
+        out (098h),a
+        inc hl
+        djnz .rb
+        pop bc
+        djnz .rt
+        pop hl
+        ret
+
 ; ------------------------------------------------------------
 ; audio dell'episodio: effetti sul canale A, russare sul B
 ; ------------------------------------------------------------
@@ -1468,25 +1570,34 @@ ep_audio:
         out (0A1h),a
         jp  .snore
 .n5:
-        ; l'URLO dell'accecamento: un lamento VERO - due toni
-        ; scordati (battimenti: la gola) che precipitano d'ottava
-        ; con vibrato, sopra un raschio di rumore, a tutto volume
-        ; sui canali A+B insieme. La coda si spegne da sola.
-        ld  a,100
-        sub d               ; tempo trascorso (0..100)
-        ld  b,a
-        srl a
-        add a,b
-        add a,50            ; periodo 50..200: acuto -> grave
-        ld  b,a
+        ; l'URLO dell'accecamento: un ruggito GUTTURALE, non un
+        ; laser - attacco che sale dal registro grave, sostegno
+        ; col growl (trillo largo del periodo ogni 2 frame: la
+        ; gola che raspa) e una dissonanza larga sul secondo
+        ; canale, rumore ruvido che sfarfalla sopra, coda che
+        ; sprofonda e si spegne.
         ld  a,d
-        and 4
+        cp  70
+        jr  c,.us
+        sub 70              ; attacco (d 100..70): sale al sostegno
+        add a,a
+        add a,180           ; periodo 240 -> 180 (grave -> medio)
+        ld  b,a
+        jr  .uv
+.us:
+        ld  a,70
+        sub d
+        srl a
+        add a,180           ; sostegno: sprofonda piano (180..215)
+        ld  b,a
+        ld  a,d             ; il growl, solo qui: raspo di gola
+        and 2
         jr  z,.uv
-        inc b               ; vibrato largo, da gola spalancata
-        inc b
-        inc b
+        ld  a,b
+        add a,24
+        ld  b,a
 .uv:
-        xor a               ; tono A: il lamento
+        xor a               ; tono A: il corpo del ruggito
         out (0A0h),a
         ld  a,b
         out (0A1h),a
@@ -1494,21 +1605,23 @@ ep_audio:
         out (0A0h),a
         xor a
         out (0A1h),a
-        ld  a,2             ; tono B: scordato di un pelo
+        ld  a,2             ; tono B: dissonanza larga (battiti)
         out (0A0h),a
         ld  a,b
-        add a,3
+        add a,13
         out (0A1h),a
         ld  a,3
         out (0A0h),a
         xor a
         out (0A1h),a
-        ld  a,6             ; il raschio di gola sotto
+        ld  a,6             ; il rumore ruvido che sfarfalla
         out (0A0h),a
-        ld  a,18
+        ld  a,d
+        and 7
+        add a,8
         out (0A1h),a
-        ld  a,d             ; inviluppo: pieno, poi dissolvenza
-        cp  24
+        ld  a,d             ; inviluppo: pieno, coda in dissolvenza
+        cp  25
         jr  c,.ud
         ld  a,15
         jr  .uw
