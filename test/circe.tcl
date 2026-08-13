@@ -1,0 +1,102 @@
+# Test dell'episodio di CIRCE: GOTO2 -> bosco di Eea, raccolta
+# del MOLY sul sentiero, sala del palazzo, la stella magica cade
+# sulla verticale del giocatore fermo -> MAIALE (col moly), fuga
+# nel cunicolo basso -> VITTORIA (leg 1 -> 2, rotta per Eolia).
+# Esito in build/circe_result.txt.
+
+proc report {msg} {
+    set fh [open "build/circe_result.txt" a]
+    puts $fh $msg
+    close $fh
+}
+catch {file delete "build/circe_result.txt"}
+
+proc tap {row mask t} {
+    after time $t "keymatrixdown $row $mask"
+    after time [expr {$t + 0.4}] "keymatrixup $row $mask"
+}
+# G O T O 2 sul titolo
+tap 3 16 4.0
+tap 4 16 4.8
+tap 5 2  5.6
+tap 4 16 6.4
+tap 0 4  7.2
+
+# bosco: dritti sul moly (r17 c20)
+after time 10 {
+    if {[catch {
+        set rm [debug read memory 0xC050]
+        if {$rm == 0} {
+            report "bosco: OK (stanza 0)"
+        } else {
+            report [format "bosco: stanza %d (attesa 0)" $rm]
+        }
+        debug write memory 0xC052 156
+        debug write memory 0xC054 128
+    } err]} { report "ERRORE t10: $err" }
+}
+# moly in mano? poi all'uscita (r17 c29)
+after time 11 {
+    if {[catch {
+        set my [debug read memory 0xC067]
+        if {$my == 1} {
+            report "moly: RACCOLTO"
+        } else {
+            report [format "moly: ci_moly=%d (atteso 1)" $my]
+        }
+        debug write memory 0xC052 228
+        debug write memory 0xC054 128
+    } err]} { report "ERRORE t11: $err" }
+}
+# la sala: Circe presente, si resta fermi sotto la stella
+after time 12 {
+    if {[catch {
+        set rm [debug read memory 0xC050]
+        set ch [debug read memory 0xC065]
+        if {$rm == 1 && $ch == 1} {
+            report "sala: OK (stanza 1, Circe canta)"
+        } else {
+            report [format "sala: room=%d circe=%d (attesi 1,1)" $rm $ch]
+        }
+    } err]} { report "ERRORE t12: $err" }
+}
+after time 14.5 {
+    if {[catch {
+        set bs [debug read memory 0xC059]
+        if {$bs > 0} {
+            report [format "magia: LANCIATA (stato %d)" $bs]
+        } else {
+            report "magia: nessun incantesimo in volo"
+        }
+    } err]} { report "ERRORE t14.5: $err" }
+}
+# la trasformazione
+after time 16 {
+    if {[catch {
+        set pg [debug read memory 0xC058]
+        set hh [debug read memory 0xC068]
+        if {$pg > 0 && $hh == 16} {
+            report [format "MAIALE: trasformato (timer %d, corpo 16px)" $pg]
+        } else {
+            report [format "maiale: pig=%d hh=%d (attesi >0,16)" $pg $hh]
+        }
+        screenshot -raw ./build/shot_circe.png
+    } err]} { report "ERRORE t16: $err" }
+}
+# da maiale, dritti all'uscita: la bocca della porta bassa (r18 c27)
+after time 16.5 {
+    debug write memory 0xC052 212
+    debug write memory 0xC054 136
+}
+after time 19 {
+    if {[catch {
+        set ph [debug read memory 0xC04F]
+        set lg [debug read memory 0xC040]
+        if {$ph == 0 && $lg == 2} {
+            report "fuga: VITTORIA (rotta per Eolia: leg 2)"
+        } else {
+            report [format "fuga: phase=%d leg=%d (attesi 0,2)" $ph $lg]
+        }
+    } err]} { report "ERRORE t19: $err" }
+    exit
+}

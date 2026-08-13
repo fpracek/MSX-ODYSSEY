@@ -303,7 +303,15 @@ init:
         ; siamo SBARCATI? l'episodio a terra parte diretto
         ld  a,(phase)
         or  a
-        jp  nz,ep_start
+        jr  z,.mare
+        cp  1
+        jp  z,ep_start      ; 1: Polifemo (banchi 2/3, default)
+        ld  a,6             ; 2: CIRCE - banchi 6 (codice) e 7 (dati)
+        ld  (BANK2R),a
+        ld  a,7
+        ld  (BANK3R),a
+        jp  circe.ep_start
+.mare:
 
         ; la pergamena del viaggio: rotta percorsa e prossima tratta
         call map_show
@@ -1747,9 +1755,10 @@ mus_tickC:
         ld  (musC_p),de
         ret
 
-; quali isole hanno un episodio a terra (per ora: solo i Ciclopi)
+; quali isole hanno un episodio a terra (il valore = phase:
+; 1 Polifemo, 2 Circe)
 episode_tab:
-        db  1,0,0,0,0,0
+        db  1,2,0,0,0,0
 
 ; le raffiche di Eolo: perlopiu' favorevoli (il viaggio procede),
 ; con bonacce e colpi contrari da governare col timone
@@ -2759,16 +2768,24 @@ fill_colors:
         db  "NESSUNO-BANK4-ASSET-FUTURI"
         DS  0A000h-$,0FFh
 
-; ---- banchi 5-7: riserva ----
+; ---- banco 5: riserva ----
         ORG 08000h
         db  "ODYSSEY-BANK5"
         DS  0A000h-$,0FFh
+
+; ============================================================
+;  BANCHI 6-7: l'episodio di CIRCE (modulo autonomo: codice a
+;  8000h nel banco 6, dati da gen_circe.py a A000h nel banco 7;
+;  il kernel li mappa su BANK2R/BANK3R quando phase=2)
+; ============================================================
+        MODULE circe
         ORG 08000h
-        db  "ODYSSEY-BANK6"
+        INCLUDE "circe.asm"
         DS  0A000h-$,0FFh
-        ORG 08000h
-        db  "ODYSSEY-BANK7"
-        DS  0A000h-$,0FFh
+        ORG 0A000h
+        INCLUDE "circe_data.asm"
+        DS  0C000h-$,0FFh
+        ENDMODULE
 
 ; ============================================================
 ;  BANCHI 8-19: le pergamene del viaggio (bitmap SC2 generate
