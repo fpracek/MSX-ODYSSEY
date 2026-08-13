@@ -65,98 +65,109 @@ SOLID = {1, 2, 3, 4}
 EXIT = {7}
 
 POLI_T0 = 20            # primo tile del ciclope
-POLI_W, POLI_H = 10, 12  # in tile (80x96 pixel: un COLOSSO)
-# l'occhio: blocco di 3x2 tile (24x16 px) con indici dedicati e
-# contigui, cosi' lo swap dorme/sveglio riscrive 6 tile in fila
-EYE_BX, EYE_BY, EYE_BW, EYE_BH = 3, 3, 3, 2
+POLI_W, POLI_H = 12, 14  # in tile (96x112: quasi mezzo schermo)
+# l'occhio: blocco di 4x2 tile (32x16 px) con indici dedicati e
+# contigui, cosi' lo swap dorme/sveglio riscrive 8 tile in fila
+EYE_BX, EYE_BY, EYE_BW, EYE_BH = 4, 4, 4, 2
 EYE_POS = [(bx, by) for by in range(EYE_BY, EYE_BY + EYE_BH)
            for bx in range(EYE_BX, EYE_BX + EYE_BW)]
 
 
 def draw_polifemo(eye_open):
-    """Il COLOSSO: volto di Polifemo a 80x96, dal riferimento di
-    Fausto (la maschera): chioma e barba nere a ricci, viso chiaro
-    pieno, monociglio, naso lungo, baffi a onda, la bocca d'ORO,
-    spalle bronzee - e l'occhio unico ENORME al centro."""
-    g = [[0] * 80 for _ in range(96)]
+    """Il COLOSSO a 96x112 (quasi mezzo schermo), dal riferimento di
+    Fausto: chioma e barba nere a ricci con CIOCCHE D'ARGENTO, viso
+    chiaro con le rughe sulla fronte, monociglio aggrottato, naso
+    con le narici, baffi a onda, la bocca d'ORO con la linea scura,
+    spalle bronzee - e l'occhio unico di 32x16 al centro."""
+    g = [[0] * 96 for _ in range(112)]
     K, W, GOLD, SKIN, GRAY = 1, 15, 10, 10, 14
 
     def disc(cx, cy, rx, ry, c):
-        for y in range(max(0, cy - ry), min(96, cy + ry + 1)):
-            for x in range(max(0, cx - rx), min(80, cx + rx + 1)):
+        for y in range(max(0, cy - ry), min(112, cy + ry + 1)):
+            for x in range(max(0, cx - rx), min(96, cx + rx + 1)):
                 if ((x - cx) * ry) ** 2 + ((y - cy) * rx) ** 2 \
                         <= (rx * ry) ** 2:
                     g[y][x] = c
 
     # la chioma: massa nera con ricci grossi sul bordo
-    disc(40, 24, 35, 24, K)
-    for cx, cy in ((8, 20), (16, 9), (28, 3), (40, 1), (52, 3),
-                   (64, 9), (72, 20), (4, 36), (76, 36)):
-        disc(cx, cy, 8, 8, K)
+    disc(48, 30, 42, 29, K)
+    for cx, cy in ((9, 24), (18, 11), (32, 4), (48, 1), (64, 4),
+                   (78, 11), (87, 24), (5, 42), (91, 42)):
+        disc(cx, cy, 9, 9, K)
     # il viso chiaro, pieno
-    disc(40, 42, 24, 27, W)
-    # ombre laterali delle guance (grigio: profondita')
-    disc(20, 52, 3, 7, GRAY)
-    disc(60, 52, 3, 7, GRAY)
+    disc(48, 52, 29, 33, W)
+    # rughe della fronte (grigio)
+    for x in range(34, 63):
+        g[24 + abs(x - 48) // 9][x] = GRAY
+    # ombre laterali delle guance (profondita')
+    disc(24, 64, 4, 10, GRAY)
+    disc(72, 64, 4, 10, GRAY)
     # monociglio: arco nero spesso, aggrottato sull'occhio
-    for x in range(16, 65):
-        yb = 18 + abs(x - 40) // 5
+    for x in range(20, 77):
+        yb = 27 + abs(x - 48) // 5
         for y in range(yb, yb + 5):
             g[y][x] = K
     # naso lungo con le narici
-    for y in range(40, 54):
-        for x in range(36, 45):
-            if x in (36, 44) or y > 51:
+    for y in range(48, 66):
+        for x in range(43, 54):
+            if x in (43, 53) or y > 63:
                 g[y][x] = K
             elif g[y][x] == 0:
                 g[y][x] = W
-    for y in range(51, 54):
-        g[y][34] = K
-        g[y][46] = K
+    for y in range(62, 66):
+        g[y][40] = K
+        g[y][41] = K
+        g[y][56] = K
+        g[y][57] = K
     # baffi a onda
-    for x in range(18, 63):
-        yb = 56 + (2 if 28 < x < 52 else 0)
-        for y in range(yb, yb + 4):
+    for x in range(22, 75):
+        yb = 68 + (2 if 34 < x < 62 else 0)
+        for y in range(yb, yb + 5):
             g[y][x] = K
-    # la bocca d'ORO spalancata
-    for y in range(61, 67):
-        for x in range(30, 50):
+    # la bocca d'ORO spalancata, con la linea scura in mezzo
+    for y in range(74, 81):
+        for x in range(36, 60):
             g[y][x] = GOLD
-    # la barba: massone nero a ricci (i buchi sono la texture)
-    for y in range(66, 90):
-        half = 36 - max(0, (y - 74)) * 3 // 2
-        for x in range(40 - half, 40 + half):
-            if 0 <= x < 80:
+    for x in range(38, 58):
+        g[77][x] = K
+    # la barba: massone nero a ricci, con ciocche d'argento
+    for y in range(80, 106):
+        half = 43 - max(0, (y - 88)) * 3 // 2
+        for x in range(48 - half, 48 + half):
+            if 0 <= x < 96:
                 if ((x * 7 + y * 13) % 11) != 0:
-                    g[y][x] = K
+                    g[y][x] = GRAY if ((x * 5 + y * 7) % 31) == 0 \
+                        else K
     # boccoli finali della barba
-    for cx, cy in ((14, 82), (26, 88), (40, 90), (54, 88), (66, 82)):
-        disc(cx, cy, 6, 6, K)
+    for cx, cy in ((16, 98), (30, 104), (48, 106), (66, 104),
+                   (80, 98)):
+        disc(cx, cy, 7, 7, K)
     # spalle bronzee
-    for y in range(88, 96):
-        for x in range(2, 78):
-            if abs(x - 40) < 22 + (y - 88) * 2:
+    for y in range(104, 112):
+        for x in range(2, 94):
+            if abs(x - 48) < 26 + (y - 104) * 2:
                 if g[y][x] == 0:
                     g[y][x] = SKIN
-    # ---- L'OCCHIO (regione 24x16: blocchi EYE_POS) ----
-    for y in range(24, 40):
-        for x in range(24, 48):
+    # ---- L'OCCHIO (regione 32x16: blocchi EYE_POS) ----
+    for y in range(32, 48):
+        for x in range(32, 64):
             g[y][x] = W
     if eye_open:
-        disc(36, 32, 11, 7, K)                  # orbita spalancata
-        disc(36, 32, 10, 6, W)                  # sclera
-        disc(36, 32, 6, 6, 8)                   # iride ROSSA, enorme
-        disc(36, 32, 2, 2, K)                   # pupilla
-        g[29][33] = W                           # riflesso
-        g[29][34] = W
+        disc(48, 40, 15, 8, K)                  # orbita spalancata
+        disc(48, 40, 13, 6, W)                  # sclera
+        disc(48, 40, 8, 6, 8)                   # iride ROSSA, enorme
+        disc(48, 40, 3, 3, K)                   # pupilla
+        g[36][44] = W                           # riflesso
+        g[36][45] = W
+        g[37][44] = W
     else:
-        for x in range(26, 47):                 # palpebra pesante
-            yb = 30 + abs(x - 36) // 8
+        for x in range(34, 63):                 # palpebra pesante
+            yb = 38 + abs(x - 48) // 10
             g[yb][x] = K
             g[yb + 1][x] = K
-        for x in range(27, 46, 4):              # ciglia in giu'
-            g[33][x] = K
-            g[34][x] = K
+        for x in range(36, 61, 5):              # ciglia in giu'
+            g[41][x] = K
+            g[42][x] = K
     return g
 
 
@@ -227,6 +238,10 @@ ROOM_BEACH = [
     '################################',
 ]
 
+# REGOLA ASSOLUTA (seconda lezione pagata): i gradini del percorso
+# non devono MAI condividere colonne nemmeno a DUE passi di
+# distanza (48px: l'arco del salto ci arriva e sbatte la testa).
+# La scala monotona verso destra la soddisfa per costruzione.
 ROOM_CAVE = [
     '################################',
     '#                              #',
@@ -234,18 +249,18 @@ ROOM_CAVE = [
     '#                              #',
     '#                              #',
     '#                              #',
-    '#                    E         #',
+    '#                            E #',
     '#                              #',
-    '#                  -----       #',
+    '#                           ---#',
     '#                              #',
     '#                              #',
-    '#                        ----  #',
+    '#                       ----   #',
     '#                              #',
+    '#                              #',
+    '#                  ----        #',
     '#P                             #',
-    '#                   ----       #',
     '#                              #',
-    '#                              #',
-    '#   U        ----              #',
+    '#    U        ----             #',
     '#                              #',
     '#                              #',
     '================================',
