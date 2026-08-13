@@ -21,16 +21,10 @@ EP_VYMAX equ 0400h
 NZ_JUMP  equ 12         ; rumore dello stacco
 NZ_ALERT equ 16         ; soglia: l'occhio si apre
 NZ_ATTACK equ 40        ; soglia: arriva la mano
-NZ_BAT   equ 20         ; lo strillo del pipistrello: ti TRADISCE
-; i pipistrelli: pattugliano le quote dei salti; toccarli non
-; costa compagni ma fa rumore (e lo spintone puo' farti cadere)
+NZ_BAT   equ 20         ; lo strillo del pipistrello fa RUMORE
+; i pipistrelli: pattugliano le quote dei salti; il morso costa
+; un compagno E il rumore dello strillo (doppio tradimento)
 BAT_PAT  equ 148        ; pattern (148/152: due frame d'ali)
-BAT0_Y   equ 100
-BAT0_MIN equ 96
-BAT0_MAX equ 200
-BAT1_Y   equ 76
-BAT1_MIN equ 120
-BAT1_MAX equ 224
 EP_IFR   equ 90
 HAND_Y   equ 144        ; la mano spazza il pavimento (y=160)
 HAND_MIN equ 56
@@ -66,7 +60,15 @@ bat0_x    equ 0C069h
 bat0_d    equ 0C06Ah
 bat1_x    equ 0C06Bh
 bat1_d    equ 0C06Ch
-ep_bcool  equ 0C06Dh    ; immunita' breve dopo un morso
+; parametri dei pipistrelli della stanza (copiati da bat_tab)
+bat0_on   equ 0C06Eh
+bat0_y    equ 0C06Fh
+bat0_mn   equ 0C070h
+bat0_mx   equ 0C071h
+bat1_on   equ 0C072h
+bat1_y    equ 0C073h
+bat1_mn   equ 0C074h
+bat1_mx   equ 0C075h
 room_map  equ 0C100h    ; copia RAM della stanza (768 byte)
 
 ; ============================================================
@@ -618,17 +620,18 @@ ep_hit:
 ; Il morso non costa compagni: costa RUMORE (e lo spintone).
 ; ------------------------------------------------------------
 ep_bats:
-        ld  a,(ep_cyc)
-        or  a
-        ret z
         ; pipistrello 0
+        ld  a,(bat0_on)
+        or  a
+        jr  z,.n0
         ld  a,(bat0_d)
         or  a
         jr  nz,.b0l
         ld  a,(bat0_x)
         inc a
         ld  (bat0_x),a
-        cp  BAT0_MAX
+        ld  hl,bat0_mx
+        cp  (hl)
         jr  c,.b0k
         ld  a,1
         ld  (bat0_d),a
@@ -637,19 +640,30 @@ ep_bats:
         ld  a,(bat0_x)
         dec a
         ld  (bat0_x),a
-        cp  BAT0_MIN
+        ld  hl,bat0_mn
+        cp  (hl)
         jr  nc,.b0k
         xor a
         ld  (bat0_d),a
 .b0k:
+        ld  a,(bat0_x)
+        ld  b,a
+        ld  a,(bat0_y)
+        ld  c,a
+        call bat_bite
+.n0:
         ; pipistrello 1
+        ld  a,(bat1_on)
+        or  a
+        ret z
         ld  a,(bat1_d)
         or  a
         jr  nz,.b1l
         ld  a,(bat1_x)
         inc a
         ld  (bat1_x),a
-        cp  BAT1_MAX
+        ld  hl,bat1_mx
+        cp  (hl)
         jr  c,.b1k
         ld  a,1
         ld  (bat1_d),a
@@ -658,26 +672,24 @@ ep_bats:
         ld  a,(bat1_x)
         dec a
         ld  (bat1_x),a
-        cp  BAT1_MIN
+        ld  hl,bat1_mn
+        cp  (hl)
         jr  nc,.b1k
         xor a
         ld  (bat1_d),a
 .b1k:
-        ; morsi (con una breve immunita')
-        ld  a,(ep_bcool)
-        or  a
-        ret nz
-        ld  a,(bat0_x)
-        ld  b,a
-        ld  c,BAT0_Y
-        call bat_bite
         ld  a,(bat1_x)
         ld  b,a
-        ld  c,BAT1_Y
+        ld  a,(bat1_y)
+        ld  c,a
         jp  bat_bite
 
 ; B = x del pipistrello, C = la sua quota: ha preso Ulisse?
+; Il morso costa un COMPAGNO, piu' lo strillo che fa rumore.
 bat_bite:
+        ld  a,(ep_ifr)
+        or  a
+        ret nz
         ld  a,(ep_yh)
         add a,8
         sub c               ; (yh+8) - bat_y
@@ -693,13 +705,15 @@ bat_bite:
 .xa:
         cp  12
         ret nc
-        ; MORSO: strillo, rumore, spintone
-        ld  a,40
-        ld  (ep_bcool),a
-        ld  a,4             ; strillo acuto
+        ; MORSO: un compagno in meno, strillo, spintone
+        ld  a,EP_IFR
+        ld  (ep_ifr),a
+        ld  a,4             ; strillo acutissimo
         ld  (ep_sfx_ty),a
         ld  a,12
         ld  (ep_sfx_t),a
+        ld  a,1
+        ld  (ep_hud),a
         ld  a,(ep_xh)
         cp  b
         jr  c,.pushl
@@ -716,15 +730,22 @@ bat_bite:
 .px:
         ld  (ep_xh),a
         ld  a,NZ_BAT
-        jp  ep_addnoise
+        call ep_addnoise
+        ld  hl,crew
+        dec (hl)
+        ret nz
+        ld  a,2             ; la ciurma e' finita
+        ld  (ep_end),a
+        ret
+
+; pipistrelli per stanza: on, quota, x min, x max (x2)
+bat_tab:
+        db  1,108,64,200    ; spiaggia: uno, sui salti bassi
+        db  0,0,0,0
+        db  1,100,96,200    ; caverna: due
+        db  1,76,120,224
 
 ep_timers:
-        ld  a,(ep_bcool)
-        or  a
-        jr  z,.t1
-        dec a
-        ld  (ep_bcool),a
-.t1:
         ld  a,(ep_ifr)
         or  a
         ret z
@@ -789,13 +810,24 @@ ep_load_room:
         ld  (hand_xx),a
         ld  (ep_nlast),a
         ld  (bat0_d),a
-        ld  (ep_bcool),a
+        ; parametri dei pipistrelli di QUESTA stanza
+        ld  a,(ep_room)
+        add a,a
+        add a,a
+        add a,a             ; *8
+        ld  l,a
+        ld  h,0
+        ld  bc,bat_tab
+        add hl,bc
+        ld  de,bat0_on
+        ld  bc,8
+        ldir
+        ld  a,(bat0_mn)
+        ld  (bat0_x),a
+        ld  a,(bat1_mx)
+        ld  (bat1_x),a
         ld  a,1
         ld  (bat1_d),a
-        ld  a,BAT0_MIN
-        ld  (bat0_x),a
-        ld  a,BAT1_MAX
-        ld  (bat1_x),a
         ld  a,1
         ld  (ep_hud),a
         ; occhio chiuso (se c'e' il ciclope)
@@ -996,13 +1028,10 @@ ep_isr:
         out (098h),a
         ld  a,1             ; NERE, sullo sfondo indaco dei livelli
         out (098h),a
-        ld  a,(cyc_state)   ; slot 3-4: bronzo... o la mano
-        cp  2
-        jr  z,.hand
-        ld  a,d             ; 3: bronzo-su
-        out (098h),a
-        ld  a,e
-        out (098h),a
+        ld  a,d             ; 3: bronzo-su - SEMPRE visibile: la
+        out (098h),a        ; mano ora e' un solo sprite, quindi la
+        ld  a,e             ; faccia non "diventa trasparente" piu'
+        out (098h),a        ; (4 per riga: W,K,B + mano = esatti)
         ld  a,c
         add a,12
         out (098h),a
@@ -1018,31 +1047,30 @@ ep_isr:
         out (098h),a
         ld  a,10
         out (098h),a
-        jr  .term
-.hand:
+        ; slot 5: la mano (un solo sprite da 16, centrata)
+        ld  a,(cyc_state)
+        cp  2
+        jr  nz,.hhid
         ld  a,HAND_Y-1
         out (098h),a
         ld  a,(hand_xx)
+        add a,8
         out (098h),a
         ld  a,140
         out (098h),a
         ld  a,10
         out (098h),a
-        ld  a,HAND_Y-1
+        jr  .batsec
+.hhid:
+        ld  a,209
         out (098h),a
-        ld  a,(hand_xx)
-        add a,16
+        xor a
         out (098h),a
-        ld  a,144
         out (098h),a
-        ld  a,10
         out (098h),a
-.term:
-        ; slot 5-6: i pipistrelli (solo nella caverna; le loro
-        ; quote non toccano mai le righe della mano)
-        ld  a,(ep_cyc)
-        or  a
-        jr  z,.nobats
+.batsec:
+        ; slot 6-7: i pipistrelli della stanza (quote lontane
+        ; dalle righe della mano per costruzione)
         ld  a,(frame_cnt)
         and 4
         jr  z,.bw1
@@ -1051,7 +1079,11 @@ ep_isr:
 .bw1:
         ld  c,BAT_PAT
 .bw2:
-        ld  a,BAT0_Y-1
+        ld  a,(bat0_on)
+        or  a
+        jr  z,.b0h
+        ld  a,(bat0_y)
+        dec a
         out (098h),a
         ld  a,(bat0_x)
         out (098h),a
@@ -1059,7 +1091,20 @@ ep_isr:
         out (098h),a
         ld  a,1             ; neri, come si deve
         out (098h),a
-        ld  a,BAT1_Y-1
+        jr  .b1s
+.b0h:
+        ld  a,209
+        out (098h),a
+        xor a
+        out (098h),a
+        out (098h),a
+        out (098h),a
+.b1s:
+        ld  a,(bat1_on)
+        or  a
+        jr  z,.b1h
+        ld  a,(bat1_y)
+        dec a
         out (098h),a
         ld  a,(bat1_x)
         out (098h),a
@@ -1068,17 +1113,13 @@ ep_isr:
         ld  a,1
         out (098h),a
         jr  .oamend
-.nobats:
-        ld  e,2
-.nb2:
+.b1h:
         ld  a,209
         out (098h),a
         xor a
         out (098h),a
         out (098h),a
         out (098h),a
-        dec e
-        jr  nz,.nb2
 .oamend:
         ld  a,208
         out (098h),a
