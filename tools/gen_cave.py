@@ -194,10 +194,12 @@ def grid_tile(g, bx, by):
 LEGEND = {'#': 1, '=': 2, '-': 3, 's': 4, '~': 5, ' ': 0,
           'E': 7, 'v': 8, '*': 9}
 
-# gradini da 2 righe (16px): l'eroe e' alto 24px e salta ~29px.
-# L'uscita 'E' sta DUE righe sopra la piattaforma d'arrivo (il
-# centro del corpo e' a yh+12). Lo spawn 'U' va a 3 righe piene
-# sopra il pavimento (mai a cavallo di file solide).
+# REGOLE DELLA SCALA (imparate a caro prezzo): gradini a 3 righe
+# (24px, apice di salto ~34), e i gradini consecutivi NON devono
+# mai sovrapporsi in colonna - qualsiasi cosa sopra la testa a
+# distanza di un gradino blocca il salto. L'uscita 'E' sta DUE
+# righe sopra la piattaforma d'arrivo (centro corpo = yh+12); lo
+# spawn 'U' a 3 righe piene sopra il pavimento.
 ROOM_BEACH = [
     '################################',
     '#                              #',
@@ -205,19 +207,19 @@ ROOM_BEACH = [
     '#                              #',
     '#                              #',
     '#                              #',
-    '#                            E #',
+    '#                        E     #',
     '#                              #',
-    '#                          ####',
+    '#                       ####   #',
     '#                              #',
-    '#                      ----    #',
     '#                              #',
-    '#                  ----        #',
+    '#                 ----         #',
     '#                              #',
-    '#              ----            #',
     '#                              #',
-    '#          ----                #',
-    '#  U                           #',
-    '#      ----                    #',
+    '#           ----               #',
+    '#                              #',
+    '#                              #',
+    '#  U  ----                     #',
+    '#                              #',
     '#                              #',
     '#ssssssssssssssssssssssssssssss',
     '#ssssssssssssssssssssssssssssss',
@@ -228,23 +230,23 @@ ROOM_BEACH = [
 ROOM_CAVE = [
     '################################',
     '#                              #',
-    '#  v      v         v      v  #',
+    '#            v      v      v  #',
     '#                              #',
     '#                              #',
     '#                              #',
-    '#                           E  #',
+    '#                    E         #',
     '#                              #',
-    '#                         -----#',
+    '#                  -----       #',
     '#                              #',
-    '#                   -----      #',
     '#                              #',
-    '#             -----            #',
-    '#P       *                     #',
-    '#                   -----      #',
+    '#                        ----  #',
     '#                              #',
-    '#             -----     *      #',
-    '# U                            #',
-    '#        -----                 #',
+    '#P                             #',
+    '#                   ----       #',
+    '#                              #',
+    '#                              #',
+    '#   U        ----              #',
+    '#                              #',
     '#                              #',
     '================================',
     '################################',

@@ -15,7 +15,8 @@
 ; ---------- costanti ----------
 EP_WALK  equ 320        ; 1.25 px/frame (8.8)
 EP_GRAV  equ 40         ; 0.156 px/f^2
-EP_JUMP  equ 0300h      ; 3 px/f: apice ~29px (3.5 tile)
+EP_JUMP  equ 0340h      ; 3.25 px/f: apice ~34px (i gradini da
+                        ; 24px si salgono con margine comodo)
 EP_VYMAX equ 0400h
 NZ_JUMP  equ 12         ; rumore dello stacco
 NZ_ALERT equ 20         ; soglia: l'occhio si apre
@@ -251,7 +252,9 @@ ep_physics:
         ld  hl,(ep_vyl)
         ld  de,EP_GRAV
         add hl,de
-        ld  a,h
+        bit 7,h             ; in SALITA (vy negativa): mai cappare -
+        jr  nz,.vok         ; il confronto senza segno la scambiava
+        ld  a,h             ; per caduta massima e uccideva il salto
         cp  high EP_VYMAX
         jr  c,.vok
         ld  hl,EP_VYMAX
