@@ -47,7 +47,8 @@ hand_dir  equ 0C05Ch
 ep_hud    equ 0C05Dh
 ep_ifr    equ 0C05Eh
 ep_sfx_t  equ 0C05Fh
-ep_sfx_ty equ 0C060h    ; 0 tonfo, 1 schianto, 2 ringhio, 3 mano
+ep_sfx_ty equ 0C060h    ; 0 tonfo, 1 schianto, 2 ringhio, 3 mano,
+                        ; 4 strillo pipistrello, 5 URLO del ciclope
 ep_jlatch equ 0C061h
 ep_mov    equ 0C062h    ; 0 fermo, 1 destra, 2 sinistra
 ep_eyed   equ 0C063h    ; 1 = apri occhio, 2 = chiudi (per l'ISR)
@@ -669,9 +670,9 @@ ep_stab:
         ld  (hand_xx),a
         xor a
         ld  (hand_dir),a
-        ld  a,2             ; l'URLO, lungo
+        ld  a,5             ; l'URLO vero, straziante
         ld  (ep_sfx_ty),a
-        ld  a,60
+        ld  a,100
         ld  (ep_sfx_t),a
         ld  a,EP_IFR        ; il tempo di scendere dal viso
         ld  (ep_ifr),a
@@ -850,7 +851,8 @@ ep_timers:
         dec a
         ld  (ep_ifr),a
 .roar:
-        ; il ruggito periodico della furia cieca
+        ; il lamento periodico della furia cieca: la stessa voce
+        ; dell'urlo, ma corta e gia' grave (parte a meta' caduta)
         ld  a,(ep_blind)
         or  a
         ret z
@@ -860,9 +862,9 @@ ep_timers:
         ld  a,(frame_cnt)
         and 127
         ret nz
-        ld  a,2
+        ld  a,5
         ld  (ep_sfx_ty),a
-        ld  a,24
+        ld  a,44
         ld  (ep_sfx_t),a
         ret
 
@@ -1384,7 +1386,7 @@ ep_audio:
         ; --- effetti ---
         ld  a,(ep_sfx_t)
         or  a
-        jr  z,.quiet
+        jp  z,.quiet
         dec a
         ld  (ep_sfx_t),a
         ld  d,a
@@ -1440,6 +1442,8 @@ ep_audio:
         ld  b,9
         jr  .out
 .n4:
+        dec a
+        jr  nz,.n5
         ; lo strillo del pipistrello: acutissimo e corto
         ld  a,d
         add a,4
@@ -1462,7 +1466,65 @@ ep_audio:
         out (0A0h),a
         ld  a,1
         out (0A1h),a
-        jr  .snore
+        jp  .snore
+.n5:
+        ; l'URLO dell'accecamento: un lamento VERO - due toni
+        ; scordati (battimenti: la gola) che precipitano d'ottava
+        ; con vibrato, sopra un raschio di rumore, a tutto volume
+        ; sui canali A+B insieme. La coda si spegne da sola.
+        ld  a,100
+        sub d               ; tempo trascorso (0..100)
+        ld  b,a
+        srl a
+        add a,b
+        add a,50            ; periodo 50..200: acuto -> grave
+        ld  b,a
+        ld  a,d
+        and 4
+        jr  z,.uv
+        inc b               ; vibrato largo, da gola spalancata
+        inc b
+        inc b
+.uv:
+        xor a               ; tono A: il lamento
+        out (0A0h),a
+        ld  a,b
+        out (0A1h),a
+        ld  a,1
+        out (0A0h),a
+        xor a
+        out (0A1h),a
+        ld  a,2             ; tono B: scordato di un pelo
+        out (0A0h),a
+        ld  a,b
+        add a,3
+        out (0A1h),a
+        ld  a,3
+        out (0A0h),a
+        xor a
+        out (0A1h),a
+        ld  a,6             ; il raschio di gola sotto
+        out (0A0h),a
+        ld  a,18
+        out (0A1h),a
+        ld  a,d             ; inviluppo: pieno, poi dissolvenza
+        cp  24
+        jr  c,.ud
+        ld  a,15
+        jr  .uw
+.ud:
+        srl a
+.uw:
+        ld  b,a
+        ld  a,8
+        out (0A0h),a
+        ld  a,b
+        out (0A1h),a
+        ld  a,9
+        out (0A0h),a
+        ld  a,b
+        out (0A1h),a
+        ret                 ; niente russare: e' sveglio eccome
 .quiet:
         ld  a,8
         out (0A0h),a
