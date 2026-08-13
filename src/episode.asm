@@ -69,7 +69,15 @@ bat1_on   equ 0C072h
 bat1_y    equ 0C073h
 bat1_mn   equ 0C074h
 bat1_mx   equ 0C075h
+; la terza stanza: il palo e l'accecamento
+ep_stake  equ 0C076h    ; 1 = il palo d'ulivo e' in mano
+ep_blind  equ 0C077h    ; 1 = accecato: furia cieca, uscita accesa
+nt_qoff   equ 0C078h    ; coda di poke alla name table (dw offset)
+nt_qval   equ 0C07Ah    ; valore da scrivere
+nt_qcnt   equ 0C07Bh    ; celle (passo 32 = in colonna); 0 = vuota
 room_map  equ 0C100h    ; copia RAM della stanza (768 byte)
+
+STK_COL  equ 15         ; colonna HUD dell'icona del palo
 
 ; ============================================================
 ;  ingresso dell'episodio (dal kernel, quando phase=1)
@@ -152,6 +160,7 @@ ep_loop:
         call ep_physics
         call ep_noise_upd
         call ep_cyclops
+        call ep_stab
         call ep_bats
         call ep_timers
         jr  ep_loop
@@ -375,7 +384,29 @@ ep_physics:
         ld  b,a
         call tile_type
         cp  2
+        jr  z,.door
+        cp  3
         ret nz
+        ; il PALO d'ulivo: raccolto (punta e gambo, due celle)
+        ld  hl,room_map+STK3_OFF
+        ld  (hl),0
+        ld  hl,room_map+STK3_OFF+32
+        ld  (hl),0
+        ld  hl,STK3_OFF
+        ld  (nt_qoff),hl
+        xor a
+        ld  (nt_qval),a
+        ld  a,2
+        ld  (nt_qcnt),a
+        ld  a,1
+        ld  (ep_stake),a
+        ld  (ep_hud),a      ; l'icona nell'HUD
+        xor a               ; "clack" del legno
+        ld  (ep_sfx_ty),a
+        ld  a,6
+        ld  (ep_sfx_t),a
+        ret
+.door:
         ld  a,(ep_room)
         inc a
         ld  (ep_room),a
@@ -515,6 +546,13 @@ ep_cyclops:
         ld  (hand_xx),a
         cp  HAND_MIN
         jr  nc,.coll
+        ld  a,(ep_blind)    ; accecato: la furia non si placa MAI
+        or  a
+        jr  z,.calmh
+        xor a
+        ld  (hand_dir),a    ; riparte: spazzata continua
+        jr  .coll
+.calmh:
         ld  a,1             ; la mano rientra: torna all'erta
         ld  (cyc_state),a
         xor a
@@ -588,6 +626,64 @@ ep_cyclops:
         ld  (ep_sfx_t),a
         xor a
         ld  (cyc_t),a
+        ret
+
+; ------------------------------------------------------------
+; la STOCCATA: in piedi sul sopracciglio, il corpo sopra
+; l'occhio, il palo in mano e il ciclope ADDORMENTATO ->
+; l'accecamento. Poi la furia cieca (la mano spazza senza sosta)
+; e la bocca della caverna s'illumina: e' la via di fuga.
+; ------------------------------------------------------------
+ep_stab:
+        ld  a,(ep_stake)
+        or  a
+        ret z
+        ld  a,(ep_blind)
+        or  a
+        ret nz
+        ld  a,(cyc_state)
+        or  a
+        ret nz              ; solo nel sonno: da sveglio ti sente
+        ld  a,(ep_ong)
+        or  a
+        ret z               ; a piedi fermi, non al volo
+        ld  a,(ep_yh)
+        cp  STAB3_Y-4
+        ret c
+        cp  STAB3_Y+5
+        ret nc
+        ld  a,(ep_xh)
+        add a,8
+        cp  STAB3_PX0
+        ret c
+        cp  STAB3_PX1+1
+        ret nc
+        ; ACCECATO!
+        ld  a,1
+        ld  (ep_blind),a
+        ld  a,3
+        ld  (ep_eyed),a     ; l'occhio ferito (lo scrive l'ISR)
+        ld  a,2
+        ld  (cyc_state),a   ; furia: la mano spazza per sempre
+        ld  a,HAND_MIN
+        ld  (hand_xx),a
+        xor a
+        ld  (hand_dir),a
+        ld  a,2             ; l'URLO, lungo
+        ld  (ep_sfx_ty),a
+        ld  a,60
+        ld  (ep_sfx_t),a
+        ld  a,EP_IFR        ; il tempo di scendere dal viso
+        ld  (ep_ifr),a
+        ; la bocca della caverna s'illumina
+        ld  hl,room_map+DARK3_OFF
+        ld  (hl),7
+        ld  hl,DARK3_OFF
+        ld  (nt_qoff),hl
+        ld  a,7
+        ld  (nt_qval),a
+        ld  a,1
+        ld  (nt_qcnt),a
         ret
 
 ; colpito dalla mano: un compagno in mare... in caverna
@@ -744,13 +840,30 @@ bat_tab:
         db  0,0,0,0
         db  1,100,96,200    ; caverna: due
         db  1,76,120,224
+        db  1,112,96,176    ; antro: uno, a guardia della scalata
+        db  0,0,0,0
 
 ep_timers:
         ld  a,(ep_ifr)
         or  a
-        ret z
+        jr  z,.roar
         dec a
         ld  (ep_ifr),a
+.roar:
+        ; il ruggito periodico della furia cieca
+        ld  a,(ep_blind)
+        or  a
+        ret z
+        ld  a,(ep_sfx_t)
+        or  a
+        ret nz
+        ld  a,(frame_cnt)
+        and 127
+        ret nz
+        ld  a,2
+        ld  (ep_sfx_ty),a
+        ld  a,24
+        ld  (ep_sfx_t),a
         ret
 
 ; ------------------------------------------------------------
@@ -1123,18 +1236,46 @@ ep_isr:
 .oamend:
         ld  a,208
         out (098h),a
+        ; --- poke in coda alla name table (palo/uscita) ---
+        ld  a,(nt_qcnt)
+        or  a
+        jr  z,.noq
+        ld  b,a
+        ld  hl,(nt_qoff)
+        ld  de,VR_NAME
+        add hl,de
+.ql:
+        ld  a,l
+        out (099h),a
+        ld  a,h
+        or  40h
+        out (099h),a
+        ld  a,(nt_qval)
+        out (098h),a
+        ld  de,32
+        add hl,de
+        djnz .ql
+        xor a
+        ld  (nt_qcnt),a
+.noq:
         ; --- l'occhio del ciclope (quando cambia stato) ---
         ld  a,(ep_eyed)
         or  a
         jr  z,.noeye
         cp  1
-        jr  nz,.close
+        jr  z,.eop
+        cp  3
+        jr  z,.ebl
+        ld  hl,eye_closed_pat
+        ld  de,eye_closed_col
+        jr  .eydo
+.eop:
         ld  hl,eye_open_pat
         ld  de,eye_open_col
         jr  .eydo
-.close:
-        ld  hl,eye_closed_pat
-        ld  de,eye_closed_col
+.ebl:
+        ld  hl,eye_blind_pat
+        ld  de,eye_blind_col
 .eydo:
         call eye_write_fast
         xor a
@@ -1186,6 +1327,17 @@ ep_isr:
         out (098h),a
         dec e
         jr  nz,.hb
+        ; l'icona del palo (quando e' in mano)
+        ld  a,low (VR_NAME+STK_COL)
+        out (099h),a
+        ld  a,(high (VR_NAME+STK_COL))|40h
+        out (099h),a
+        ld  a,(ep_stake)
+        or  a
+        jr  z,.hs
+        ld  a,STAKE_TILE
+.hs:
+        out (098h),a
 .nohud:
         call ep_audio
         ld  hl,frame_cnt

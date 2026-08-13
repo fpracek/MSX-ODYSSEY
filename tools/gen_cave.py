@@ -5,8 +5,8 @@ ODYSSEY - episodio di Polifemo: tileset, stanze, il ciclope, sprite
 Genera src/cave_data.asm (banco 3):
   - cave_pat / cave_col: tileset (pattern+colori per tile 0..N)
   - type_tab (ALIGN 256): tile -> tipo (0 vuoto, 1 solido, 2 uscita)
-  - room0/room1: name table 768 byte + meta (start x,y, flag ciclope)
-  - eye_closed/eye_open: varianti dei 2 tile dell'occhio (pat+col)
+  - room0/1/2: name table 768 byte + meta (start x,y, flag ciclope)
+  - eye_closed/eye_open/eye_blind: varianti dei tile dell'occhio
   - ep_sprites: Ulisse (fermo/passo1/passo2/salto) + mano (2 pattern)
 
 Polifemo e' disegnato proceduralmente (testa, occhio, barba, corpo,
@@ -52,6 +52,15 @@ BASE_TILES = {
           '..##....', '...#....', '...#....', '........'], C_ROCK),
     9: T(['........', '..#.....', '........', '.....#..',
           '........', '........', '.#......', '........'], C_DECO),
+    # il PALO d'ulivo appuntito: punta (10) e gambo (13)
+    10: T(['...#....', '...#....', '..###...', '..###...',
+           '..###...', '..###...', '..###...', '..###...'], C_BODY),
+    13: T(['..###...', '..###...', '..##....', '..###...',
+           '..###...', '..###...', '..##....', '..###...'], C_BODY),
+    # la bocca della caverna, BUIA (si illumina dopo l'accecamento:
+    # stessa sagoma del tile 7, ma nera)
+    11: T(['...##...', '..####..', '.######.', '.######.',
+           '.######.', '.######.', '..####..', '...##...'], 1),
     # HUD (stessi indici del navale: 12 marinaio, 14/15 barra)
     12: T(['...##...', '...##...', '..####..', '...##...',
            '..####..', '..#..#..', '..#..#..', '........'], 15),
@@ -63,6 +72,7 @@ BASE_TILES = {
 
 SOLID = {1, 2, 3, 4}
 EXIT = {7}
+PICKUP = {10, 13}       # il palo (tipo 3: si raccoglie)
 
 POLI_T0 = 20            # primo tile del ciclope
 POLI_W, POLI_H = 12, 14  # in tile (96x112: quasi mezzo schermo)
@@ -73,12 +83,13 @@ EYE_POS = [(bx, by) for by in range(EYE_BY, EYE_BY + EYE_BH)
            for bx in range(EYE_BX, EYE_BX + EYE_BW)]
 
 
-def draw_polifemo(eye_open):
+def draw_polifemo(eye_state):
     """Il COLOSSO a 96x112 (quasi mezzo schermo), dal riferimento di
     Fausto: chioma e barba nere a ricci con CIOCCHE D'ARGENTO, viso
     chiaro con le rughe sulla fronte, monociglio aggrottato, naso
     con le narici, baffi a onda, la bocca d'ORO con la linea scura,
-    spalle bronzee - e l'occhio unico di 32x16 al centro."""
+    spalle bronzee - e l'occhio unico di 32x16 al centro.
+    eye_state: 0 chiuso (dorme), 1 spalancato, 2 ACCECATO."""
     g = [[0] * 96 for _ in range(112)]
     K, W, GOLD, SKIN, GRAY = 1, 15, 10, 10, 14
 
@@ -152,7 +163,7 @@ def draw_polifemo(eye_open):
     for y in range(32, 48):
         for x in range(32, 64):
             g[y][x] = W
-    if eye_open:
+    if eye_state == 1:
         disc(48, 40, 15, 8, K)                  # orbita spalancata
         disc(48, 40, 13, 6, W)                  # sclera
         disc(48, 40, 8, 6, 8)                   # iride ROSSA, enorme
@@ -160,6 +171,17 @@ def draw_polifemo(eye_open):
         g[36][44] = W                           # riflesso
         g[36][45] = W
         g[37][44] = W
+    elif eye_state == 2:
+        for x in range(34, 63):                 # palpebra gonfia, serrata
+            yb = 38 + abs(x - 48) // 10
+            g[yb][x] = K
+            g[yb + 1][x] = K
+        for y in range(33, 45):                 # il segno del PALO:
+            for x in range(46, 50):             # squarcio rosso verticale
+                g[y][x] = 8
+        g[45][47] = 8                           # gocce
+        g[46][48] = 8
+        g[45][44] = 8
     else:
         for x in range(34, 63):                 # palpebra pesante
             yb = 38 + abs(x - 48) // 10
@@ -203,7 +225,7 @@ def grid_tile(g, bx, by):
 # stanze 32x24 (riga 0 = bordo, l'HUD la sovrascrive in parte)
 # ------------------------------------------------------------------
 LEGEND = {'#': 1, '=': 2, '-': 3, 's': 4, '~': 5, ' ': 0,
-          'E': 7, 'v': 8, '*': 9}
+          'E': 7, 'v': 8, '*': 9, 'k': 10, 'i': 13, 'D': 11}
 
 # REGOLE DELLA SCALA (imparate a caro prezzo): gradini a 3 righe
 # (24px, apice di salto ~34), e i gradini consecutivi NON devono
@@ -264,6 +286,41 @@ ROOM_CAVE = [
     '#                              #',
     '#                              #',
     '================================',
+    '################################',
+    '################################',
+    '################################',
+]
+
+
+# L'ANTRO DELL'ACCECAMENTO: si entra dall'alto a destra (la caduta
+# fa rumore: lui si desta, si aspetta e riparte), si raccoglie il
+# PALO ('k'+'i') sulla scalata che risale verso sinistra, e ci si
+# arrampica fin SULLA FRONTE del gigante (i tile del sopracciglio
+# sono solidi): li', col palo, l'occhio si acceca dall'alto - come
+# nel mito. Poi la furia cieca e la fuga verso la bocca 'D', che
+# s'illumina solo dopo il colpo.
+ROOM_THIRD = [
+    '################################',
+    '#                              #',
+    '#      v         v         v   #',
+    '#                              #',
+    '#  *                        *  #',
+    '#                        U     #',
+    '#                              #',
+    '#                              #',
+    '#                       ----   #',
+    '#                              #',
+    '#                              #',
+    '#            ---               #',
+    '#                 k            #',
+    '#                 i            #',
+    '#                ---           #',
+    '#                              #',
+    '#                              #',
+    '#                    ---     D #',
+    '#P                             #',
+    '================================',
+    '################################',
     '################################',
     '################################',
     '################################',
@@ -497,22 +554,27 @@ def main():
                     b |= 0x80 >> i
             pat[idx][y] = b
             col[idx][y] = (fg << 4) | bg
-    closed = draw_polifemo(False)
+    closed = draw_polifemo(0)
     for by in range(POLI_H):
         for bx in range(POLI_W):
             p, c = grid_tile(closed, bx, by)
             pat[POLI_T0 + by * POLI_W + bx] = p
             col[POLI_T0 + by * POLI_W + bx] = c
-    # l'occhio: 6 tile dedicati e CONTIGUI (dopo la figura), cosi'
-    # lo swap dorme/sveglio e' una riscrittura in fila
+    # l'occhio: 8 tile dedicati e CONTIGUI (dopo la figura), cosi'
+    # lo swap dorme/sveglio/ferito e' una riscrittura in fila
     eye_i0 = POLI_T0 + npoli
-    opened = draw_polifemo(True)
+    opened = draw_polifemo(1)
+    blinded = draw_polifemo(2)
     eye_open_p, eye_open_c = [], []
     eye_closed_p, eye_closed_c = [], []
+    eye_blind_p, eye_blind_c = [], []
     for i, (bx, by) in enumerate(EYE_POS):
         p, c = grid_tile(opened, bx, by)
         eye_open_p += p
         eye_open_c += c
+        p, c = grid_tile(blinded, bx, by)
+        eye_blind_p += p
+        eye_blind_c += c
         p, c = grid_tile(closed, bx, by)
         eye_closed_p += p
         eye_closed_c += c
@@ -525,14 +587,44 @@ def main():
         types[t] = 1
     for t in EXIT:
         types[t] = 2
+    for t in PICKUP:
+        types[t] = 3
+    # il SOPRACCIGLIO e' solido: nella terza stanza ci si arrampica
+    # sulla fronte del gigante per accecarlo dall'alto
+    BROW_BY, BROW_BX0, BROW_BX1 = 3, 2, 9
+    for bx in range(BROW_BX0, BROW_BX1 + 1):
+        types[POLI_T0 + BROW_BY * POLI_W + bx] = 1
 
-    rooms = [build_room(ROOM_BEACH), build_room(ROOM_CAVE)]
+    rooms = [build_room(ROOM_BEACH), build_room(ROOM_CAVE),
+             build_room(ROOM_THIRD)]
+
+    # costanti della terza stanza per l'engine: offset NT del palo
+    # e della bocca buia, e il rettangolo della stoccata (in piedi
+    # sul sopracciglio, il centro del corpo sopra l'occhio)
+    def find_ch(art, ch):
+        for ry, row in enumerate(art):
+            rx = row.find(ch)
+            if rx >= 0:
+                return rx, ry
+        raise ValueError(ch)
+    kx, ky = find_ch(ROOM_THIRD, 'k')
+    dx_, dy_ = find_ch(ROOM_THIRD, 'D')
+    ax3, ay3 = find_ch(ROOM_THIRD, 'P')
+    stab_px0 = (ax3 + EYE_BX) * 8
+    stab_px1 = (ax3 + EYE_BX + EYE_BW) * 8 - 1
+    stab_y = (ay3 - POLI_H + 1 + EYE_BY - 1) * 8 - 24
 
     out = []
     out.append('; GENERATO da tools/gen_cave.py - NON MODIFICARE A MANO')
     out.append('CAVE_NT equ %d' % n_tiles)
     out.append('EYE_T0 equ %d' % eye_i0)
     out.append('EP_NROOMS equ %d' % len(rooms))
+    out.append('STK3_OFF equ %d' % (ky * 32 + kx))
+    out.append('DARK3_OFF equ %d' % (dy_ * 32 + dx_))
+    out.append('STAB3_PX0 equ %d' % stab_px0)
+    out.append('STAB3_PX1 equ %d' % stab_px1)
+    out.append('STAB3_Y equ %d' % stab_y)
+    out.append('STAKE_TILE equ 10')
     out.append('cave_pat:')
     for t in range(n_tiles):
         out.extend(db_lines(pat[t]))
@@ -547,6 +639,10 @@ def main():
     out.extend(db_lines(eye_closed_p))
     out.append('eye_closed_col:')
     out.extend(db_lines(eye_closed_c))
+    out.append('eye_blind_pat:')
+    out.extend(db_lines(eye_blind_p))
+    out.append('eye_blind_col:')
+    out.extend(db_lines(eye_blind_c))
     out.append('        ALIGN 256')
     out.append('type_tab:')
     out.extend(db_lines(types))
@@ -587,7 +683,7 @@ def main():
         f.write('\n'.join(out))
     print('scritto %s (%d tile, %d stanze)' % (dst, n_tiles, len(rooms)))
 
-    preview(pat, col, rooms[1][0])
+    preview(pat, col, rooms[2][0])
     preview_ulisse()
 
 
