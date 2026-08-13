@@ -265,7 +265,8 @@ room_tab:
         dw  room0, room0_meta
         dw  room1, room1_meta
 ; sprite: Ulisse 35 pattern (come Polifemo), poi
-; MAIALE 140/144 dx 148/152 sx, STELLA 156/160
+; MAIALE 140/144 dx 148/152 sx, STELLA 156/160,
+; LEONE 164/168 dx 172/176 sx
 ep_sprites:
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,008h,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,010h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
@@ -349,3 +350,11 @@ ep_sprites:
         db  000h,000h,080h,000h,080h,080h,0C0h,0C0h,0E0h,0E0h,0C0h,080h,000h,000h,000h,000h
         db  000h,002h,001h,003h,001h,003h,007h,00Fh,00Fh,00Fh,007h,003h,002h,000h,000h,000h
         db  080h,080h,080h,080h,080h,0C0h,0C0h,0E0h,0E0h,0E0h,0C0h,080h,080h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,000h,040h,067h,03Fh,07Fh,07Fh,03Fh,03Fh,031h,031h,071h
+        db  000h,000h,000h,000h,000h,03Ch,03Eh,0FFh,0FFh,0FBh,0FFh,0FEh,0FCh,08Ch,08Ch,0CEh
+        db  000h,000h,000h,000h,000h,000h,040h,067h,03Fh,07Fh,07Fh,03Fh,03Fh,019h,019h,019h
+        db  000h,000h,000h,000h,000h,03Ch,03Eh,0FFh,0FFh,0FBh,0FFh,0FEh,0FCh,098h,098h,098h
+        db  000h,000h,000h,000h,000h,03Ch,07Ch,0FFh,0FFh,0DFh,0FFh,07Fh,03Fh,031h,031h,073h
+        db  000h,000h,000h,000h,000h,000h,002h,0E6h,0FCh,0FEh,0FEh,0FCh,0FCh,08Ch,08Ch,08Eh
+        db  000h,000h,000h,000h,000h,03Ch,07Ch,0FFh,0FFh,0DFh,0FFh,07Fh,03Fh,019h,019h,019h
+        db  000h,000h,000h,000h,000h,000h,002h,0E6h,0FCh,0FEh,0FEh,0FCh,0FCh,098h,098h,098h

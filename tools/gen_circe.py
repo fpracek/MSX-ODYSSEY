@@ -289,6 +289,40 @@ STAR_B = ['........#.......',
           '................',
           '................']
 
+# il LEONE ammansito: basso, dorato, ronda il pavimento
+LION_A = ['................',
+          '................',
+          '................',
+          '................',
+          '................',
+          '..........####..',
+          '.#........#####.',
+          '.##..###########',
+          '..##############',
+          '.############.##',
+          '.###############',
+          '..#############.',
+          '..############..',
+          '..##...##...##..',
+          '..##...##...##..',
+          '.###...###..###.']
+LION_B = ['................',
+          '................',
+          '................',
+          '................',
+          '................',
+          '..........####..',
+          '.#........#####.',
+          '.##..###########',
+          '..##############',
+          '.############.##',
+          '.###############',
+          '..#############.',
+          '..############..',
+          '...##..##..##...',
+          '...##..##..##...',
+          '...##..##..##...']
+
 
 def main():
     n_tiles = CIRCE_T0 + CIRCE_W * CIRCE_H
@@ -352,7 +386,8 @@ def main():
     for k in range(len(rooms)):
         out.append('        dw  room%d, room%d_meta' % (k, k))
     out.append('; sprite: Ulisse 35 pattern (come Polifemo), poi')
-    out.append('; MAIALE 140/144 dx 148/152 sx, STELLA 156/160')
+    out.append('; MAIALE 140/144 dx 148/152 sx, STELLA 156/160,')
+    out.append('; LEONE 164/168 dx 172/176 sx')
     out.append('ep_sprites:')
     poses = [UL_STAND, PR_WALKA, PR_WALKB, PR_JUMP,
              ul_mirror(PR_WALKA), ul_mirror(PR_WALKB), ul_mirror(PR_JUMP)]
@@ -364,7 +399,8 @@ def main():
                 ul_layer(up, 'K'),
                 ul_layer(up, 'B'), ul_layer(dn, 'B')]
     for art in seq + [PIG_A, PIG_B, ul_mirror(PIG_A), ul_mirror(PIG_B),
-                      STAR_A, STAR_B]:
+                      STAR_A, STAR_B,
+                      LION_A, LION_B, ul_mirror(LION_A), ul_mirror(LION_B)]:
         data = sprite16(art)
         for i in range(0, 32, 16):
             out.append('        db  ' +

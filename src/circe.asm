@@ -14,9 +14,10 @@
 EP_GRAV  equ 40
 EP_VYMAX equ 0400h
 EP_IFR   equ 90
-PIG_T    equ 250        ; ~5 secondi da maiale
-CI_CAST  equ 120        ; cadenza degli incantesimi
-WARN_T   equ 28         ; l'avviso luccicante prima della caduta
+PIG_T    equ 200        ; ~4 secondi da maiale: il cunicolo va CORSO
+CI_CAST  equ 70         ; cadenza degli incantesimi (serrata)
+WARN_T   equ 20         ; l'avviso luccicante prima della caduta
+BOLT_VY  equ 3          ; la stella cade rapida
 
 ; ---------- RAM (pulita da ep_start) ----------
 ep_room   equ 0C050h
@@ -53,6 +54,19 @@ bar_last  equ 0C070h
 nt_qoff   equ 0C071h
 nt_qval   equ 0C073h
 nt_qcnt   equ 0C074h
+; i LEONI ammansiti: parametri (da beast_tab, 8 byte) + stato
+b0_on     equ 0C075h
+b0_y      equ 0C076h
+b0_mn     equ 0C077h
+b0_mx     equ 0C078h
+b1_on     equ 0C079h
+b1_y      equ 0C07Ah
+b1_mn     equ 0C07Bh
+b1_mx     equ 0C07Ch
+b0_x      equ 0C07Dh
+b0_d      equ 0C07Eh
+b1_x      equ 0C07Fh
+b1_d      equ 0C080h
 room_map  equ 0C100h
 
 ; ============================================================
@@ -69,10 +83,10 @@ ep_start:
         ld  c,1
         call WRTVDP
         di                  ; (WRTVDP del BIOS puo' fare EI)
-        ; sprite: Ulisse 35 pattern + maiale 4 + stella 2 = 41
+        ; sprite: Ulisse 35 + maiale 4 + stella 2 + leone 4 = 45
         ld  hl,ep_sprites
         ld  de,VR_SPRP
-        ld  bc,41*32
+        ld  bc,45*32
         call vdp_copy
         ; tileset del palazzo nei 3 terzi
         ld  hl,cave_pat
@@ -131,6 +145,7 @@ ep_loop:
         call ep_input
         call ep_physics
         call ci_magic
+        call ci_beasts
         call ep_timers
         jr  ep_loop
 
@@ -464,7 +479,7 @@ ci_magic:
         jr  z,.warn
         ; --- la stella cade ---
         ld  a,(bolt_y)
-        add a,2
+        add a,BOLT_VY
         ld  (bolt_y),a
         cp  150
         jr  c,.coll
@@ -522,7 +537,28 @@ ci_magic:
         ret nz
         ld  a,CI_CAST
         ld  (hl),a
+        ; la mira ANTICIPA la corsa: se ti muovi, la stella cade
+        ; piu' avanti nella tua direzione - correre non basta
+        ld  a,(ep_mov)
+        or  a
         ld  a,(ep_xh)
+        jr  z,.aim
+        ld  b,a
+        ld  a,(ep_face)
+        or  a
+        ld  a,b
+        jr  nz,.aiml
+        add a,20
+        cp  233
+        jr  c,.aim
+        ld  a,232
+        jr  .aim
+.aiml:
+        sub 20
+        cp  8
+        jr  nc,.aim
+        ld  a,8
+.aim:
         ld  (bolt_x),a
         ld  a,12
         ld  (bolt_y),a
@@ -535,6 +571,126 @@ ci_magic:
         ld  a,14
         ld  (ep_sfx_t),a
         ret
+
+; ------------------------------------------------------------
+; i LEONI ammansiti: rondano il pavimento avanti e indietro.
+; Si scavalcano solo col salto; il morso costa un compagno -
+; anche al maiale (le zampette corrono, ma i denti sono denti).
+; ------------------------------------------------------------
+ci_beasts:
+        ld  a,(b0_on)
+        or  a
+        jr  z,.n0
+        ld  a,(b0_d)
+        or  a
+        jr  nz,.b0l
+        ld  a,(b0_x)
+        inc a
+        ld  (b0_x),a
+        ld  hl,b0_mx
+        cp  (hl)
+        jr  c,.b0k
+        ld  a,1
+        ld  (b0_d),a
+        jr  .b0k
+.b0l:
+        ld  a,(b0_x)
+        dec a
+        ld  (b0_x),a
+        ld  hl,b0_mn
+        cp  (hl)
+        jr  nc,.b0k
+        xor a
+        ld  (b0_d),a
+.b0k:
+        ld  a,(b0_x)
+        ld  b,a
+        call lion_bite
+.n0:
+        ld  a,(b1_on)
+        or  a
+        ret z
+        ld  a,(b1_d)
+        or  a
+        jr  nz,.b1l
+        ld  a,(b1_x)
+        inc a
+        ld  (b1_x),a
+        ld  hl,b1_mx
+        cp  (hl)
+        jr  c,.b1k
+        ld  a,1
+        ld  (b1_d),a
+        jr  .b1k
+.b1l:
+        ld  a,(b1_x)
+        dec a
+        ld  (b1_x),a
+        ld  hl,b1_mn
+        cp  (hl)
+        jr  nc,.b1k
+        xor a
+        ld  (b1_d),a
+.b1k:
+        ld  a,(b1_x)
+        ld  b,a
+        jp  lion_bite
+
+; B = x del leone: ha azzannato? (solo coi piedi a terra bassa:
+; il salto lo scavalca, uomo o maiale che sia)
+lion_bite:
+        ld  a,(ep_ifr)
+        or  a
+        ret nz
+        ld  a,(ep_yh)
+        ld  hl,ci_hh
+        add a,(hl)          ; i piedi
+        cp  144
+        ret c               ; in volo: scavalcato
+        ld  a,(ep_xh)
+        sub b
+        jp  p,.xa
+        neg
+.xa:
+        cp  12
+        ret nc
+        ; AZZANNATO: compagno, spintone, iframes
+        ld  a,EP_IFR
+        ld  (ep_ifr),a
+        ld  a,1
+        ld  (ep_sfx_ty),a
+        ld  a,30
+        ld  (ep_sfx_t),a
+        ld  a,1
+        ld  (ep_hud),a
+        ld  a,(ep_xh)
+        cp  b
+        jr  c,.pushl
+        add a,12
+        cp  233
+        jr  c,.px
+        ld  a,232
+        jr  .px
+.pushl:
+        sub 12
+        cp  8
+        jr  nc,.px
+        ld  a,8
+.px:
+        ld  (ep_xh),a
+        ld  hl,crew
+        dec (hl)
+        ret nz
+        ld  a,2
+        ld  (ep_end),a
+        ret
+
+; leoni per stanza: on, quota, x min, x max (x2)
+beast_tab:
+        db  1,136,40,140    ; bosco: due, a guardia del sentiero
+        db  1,136,120,224
+        db  1,136,110,215   ; sala: uno, che ronda il cunicolo
+        db  0,0,0,0
 
 ; la trasformazione: MAIALE (i piedi restano dove sono)
 to_pig:
@@ -695,6 +851,26 @@ ep_load_room:
         call set_form       ; sempre uomo all'ingresso (A=0)
         ld  a,CI_CAST
         ld  (cast_t),a
+        ; i leoni di QUESTA stanza
+        ld  a,(ep_room)
+        add a,a
+        add a,a
+        add a,a
+        ld  l,a
+        ld  h,0
+        ld  bc,beast_tab
+        add hl,bc
+        ld  de,b0_on
+        ld  bc,8
+        ldir
+        ld  a,(b0_mn)
+        ld  (b0_x),a
+        xor a
+        ld  (b0_d),a
+        ld  a,(b1_mx)
+        ld  (b1_x),a
+        ld  a,1
+        ld  (b1_d),a
         ld  a,1
         ld  (ep_hud),a
         ld  b,11100010b
@@ -944,16 +1120,67 @@ ep_isr:
         out (098h),a
         out (098h),a
 .slot67:
-        ld  e,2
-.s67:
+        ; --- slot 6-7: i leoni ammansiti (dorati, al trotto) ---
+        ld  a,(frame_cnt)
+        and 8
+        jr  z,.lw1
+        ld  c,168
+        jr  .lw2
+.lw1:
+        ld  c,164
+.lw2:
+        ld  a,(b0_on)
+        or  a
+        jr  z,.l0h
+        ld  a,(b0_y)
+        dec a
+        out (098h),a
+        ld  a,(b0_x)
+        out (098h),a
+        ld  a,(b0_d)
+        or  a
+        ld  a,c
+        jr  z,.l0p
+        add a,8             ; verso sinistra: specchiato
+.l0p:
+        out (098h),a
+        ld  a,10            ; criniera d'oro
+        out (098h),a
+        jr  .l1s
+.l0h:
         ld  a,209
         out (098h),a
         xor a
         out (098h),a
         out (098h),a
         out (098h),a
-        dec e
-        jr  nz,.s67
+.l1s:
+        ld  a,(b1_on)
+        or  a
+        jr  z,.l1h
+        ld  a,(b1_y)
+        dec a
+        out (098h),a
+        ld  a,(b1_x)
+        out (098h),a
+        ld  a,(b1_d)
+        or  a
+        ld  a,c
+        jr  z,.l1p
+        add a,8
+.l1p:
+        out (098h),a
+        ld  a,10
+        out (098h),a
+        jr  .oamend
+.l1h:
+        ld  a,209
+        out (098h),a
+        xor a
+        out (098h),a
+        out (098h),a
+        out (098h),a
+.oamend:
         ld  a,208
         out (098h),a
         ; --- coda di poke alla name table (il moly raccolto) ---

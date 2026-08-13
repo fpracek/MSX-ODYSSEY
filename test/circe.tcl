@@ -26,10 +26,12 @@ tap 0 4  7.2
 after time 10 {
     if {[catch {
         set rm [debug read memory 0xC050]
-        if {$rm == 0} {
-            report "bosco: OK (stanza 0)"
+        set l0 [debug read memory 0xC075]
+        set l1 [debug read memory 0xC079]
+        if {$rm == 0 && $l0 == 1 && $l1 == 1} {
+            report "bosco: OK (stanza 0, due leoni di ronda)"
         } else {
-            report [format "bosco: stanza %d (attesa 0)" $rm]
+            report [format "bosco: room=%d leoni=%d,%d (attesi 0,1,1)" $rm $l0 $l1]
         }
         debug write memory 0xC052 156
         debug write memory 0xC054 128
@@ -60,7 +62,7 @@ after time 12 {
         }
     } err]} { report "ERRORE t12: $err" }
 }
-after time 14.5 {
+after time 13 {
     if {[catch {
         set bs [debug read memory 0xC059]
         if {$bs > 0} {
@@ -68,7 +70,7 @@ after time 14.5 {
         } else {
             report "magia: nessun incantesimo in volo"
         }
-    } err]} { report "ERRORE t14.5: $err" }
+    } err]} { report "ERRORE t13: $err" }
 }
 # la trasformazione
 after time 16 {
