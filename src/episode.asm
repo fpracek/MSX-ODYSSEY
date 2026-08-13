@@ -19,8 +19,18 @@ EP_JUMP  equ 0340h      ; 3.25 px/f: apice ~34px (i gradini da
                         ; 24px si salgono con margine comodo)
 EP_VYMAX equ 0400h
 NZ_JUMP  equ 12         ; rumore dello stacco
-NZ_ALERT equ 20         ; soglia: l'occhio si apre
+NZ_ALERT equ 16         ; soglia: l'occhio si apre
 NZ_ATTACK equ 40        ; soglia: arriva la mano
+NZ_BAT   equ 20         ; lo strillo del pipistrello: ti TRADISCE
+; i pipistrelli: pattugliano le quote dei salti; toccarli non
+; costa compagni ma fa rumore (e lo spintone puo' farti cadere)
+BAT_PAT  equ 148        ; pattern (148/152: due frame d'ali)
+BAT0_Y   equ 100
+BAT0_MIN equ 96
+BAT0_MAX equ 200
+BAT1_Y   equ 76
+BAT1_MIN equ 120
+BAT1_MAX equ 224
 EP_IFR   equ 90
 HAND_Y   equ 144        ; la mano spazza il pavimento (y=160)
 HAND_MIN equ 56
@@ -52,6 +62,11 @@ snore_t   equ 0C065h
 ep_cyc    equ 0C066h    ; questa stanza ha il ciclope
 ep_end    equ 0C067h    ; 1 vittoria, 2 sconfitta
 ep_face   equ 0C068h    ; 0 = guarda a destra, 1 = a sinistra
+bat0_x    equ 0C069h
+bat0_d    equ 0C06Ah
+bat1_x    equ 0C06Bh
+bat1_d    equ 0C06Ch
+ep_bcool  equ 0C06Dh    ; immunita' breve dopo un morso
 room_map  equ 0C100h    ; copia RAM della stanza (768 byte)
 
 ; ============================================================
@@ -71,10 +86,10 @@ ep_start:
         di                  ; WRTVDP del BIOS puo' riabilitare gli
                             ; interrupt: i caricamenti vanno protetti
         ; sprite dell'episodio: Ulisse 16x24, 7 pose x 5 pattern
-        ; (frontale + profili destra/sinistra) + mano = 37 pattern
+        ; + mano + pipistrello (2 frame) = 39 pattern
         ld  hl,ep_sprites
         ld  de,VR_SPRP
-        ld  bc,37*32
+        ld  bc,39*32
         call vdp_copy
         ; tileset della caverna nei 3 terzi (pattern + colori)
         ld  hl,cave_pat
@@ -135,6 +150,7 @@ ep_loop:
         call ep_physics
         call ep_noise_upd
         call ep_cyclops
+        call ep_bats
         call ep_timers
         jr  ep_loop
 
@@ -597,7 +613,118 @@ ep_hit:
         ld  (ep_end),a
         ret
 
+; ------------------------------------------------------------
+; i pipistrelli: volano avanti e indietro sulle quote dei salti.
+; Il morso non costa compagni: costa RUMORE (e lo spintone).
+; ------------------------------------------------------------
+ep_bats:
+        ld  a,(ep_cyc)
+        or  a
+        ret z
+        ; pipistrello 0
+        ld  a,(bat0_d)
+        or  a
+        jr  nz,.b0l
+        ld  a,(bat0_x)
+        inc a
+        ld  (bat0_x),a
+        cp  BAT0_MAX
+        jr  c,.b0k
+        ld  a,1
+        ld  (bat0_d),a
+        jr  .b0k
+.b0l:
+        ld  a,(bat0_x)
+        dec a
+        ld  (bat0_x),a
+        cp  BAT0_MIN
+        jr  nc,.b0k
+        xor a
+        ld  (bat0_d),a
+.b0k:
+        ; pipistrello 1
+        ld  a,(bat1_d)
+        or  a
+        jr  nz,.b1l
+        ld  a,(bat1_x)
+        inc a
+        ld  (bat1_x),a
+        cp  BAT1_MAX
+        jr  c,.b1k
+        ld  a,1
+        ld  (bat1_d),a
+        jr  .b1k
+.b1l:
+        ld  a,(bat1_x)
+        dec a
+        ld  (bat1_x),a
+        cp  BAT1_MIN
+        jr  nc,.b1k
+        xor a
+        ld  (bat1_d),a
+.b1k:
+        ; morsi (con una breve immunita')
+        ld  a,(ep_bcool)
+        or  a
+        ret nz
+        ld  a,(bat0_x)
+        ld  b,a
+        ld  c,BAT0_Y
+        call bat_bite
+        ld  a,(bat1_x)
+        ld  b,a
+        ld  c,BAT1_Y
+        jp  bat_bite
+
+; B = x del pipistrello, C = la sua quota: ha preso Ulisse?
+bat_bite:
+        ld  a,(ep_yh)
+        add a,8
+        sub c               ; (yh+8) - bat_y
+        jp  p,.ya
+        neg
+.ya:
+        cp  14
+        ret nc
+        ld  a,(ep_xh)
+        sub b
+        jp  p,.xa
+        neg
+.xa:
+        cp  12
+        ret nc
+        ; MORSO: strillo, rumore, spintone
+        ld  a,40
+        ld  (ep_bcool),a
+        ld  a,4             ; strillo acuto
+        ld  (ep_sfx_ty),a
+        ld  a,12
+        ld  (ep_sfx_t),a
+        ld  a,(ep_xh)
+        cp  b
+        jr  c,.pushl
+        add a,12            ; il pipistrello e' a sinistra: via a destra
+        cp  233
+        jr  c,.px
+        ld  a,232
+        jr  .px
+.pushl:
+        sub 12
+        cp  8
+        jr  nc,.px
+        ld  a,8
+.px:
+        ld  (ep_xh),a
+        ld  a,NZ_BAT
+        jp  ep_addnoise
+
 ep_timers:
+        ld  a,(ep_bcool)
+        or  a
+        jr  z,.t1
+        dec a
+        ld  (ep_bcool),a
+.t1:
         ld  a,(ep_ifr)
         or  a
         ret z
@@ -661,6 +788,14 @@ ep_load_room:
         ld  (cyc_state),a
         ld  (hand_xx),a
         ld  (ep_nlast),a
+        ld  (bat0_d),a
+        ld  (ep_bcool),a
+        ld  a,1
+        ld  (bat1_d),a
+        ld  a,BAT0_MIN
+        ld  (bat0_x),a
+        ld  a,BAT1_MAX
+        ld  (bat1_x),a
         ld  a,1
         ld  (ep_hud),a
         ; occhio chiuso (se c'e' il ciclope)
@@ -903,6 +1038,48 @@ ep_isr:
         ld  a,10
         out (098h),a
 .term:
+        ; slot 5-6: i pipistrelli (solo nella caverna; le loro
+        ; quote non toccano mai le righe della mano)
+        ld  a,(ep_cyc)
+        or  a
+        jr  z,.nobats
+        ld  a,(frame_cnt)
+        and 4
+        jr  z,.bw1
+        ld  c,BAT_PAT+4
+        jr  .bw2
+.bw1:
+        ld  c,BAT_PAT
+.bw2:
+        ld  a,BAT0_Y-1
+        out (098h),a
+        ld  a,(bat0_x)
+        out (098h),a
+        ld  a,c
+        out (098h),a
+        ld  a,1             ; neri, come si deve
+        out (098h),a
+        ld  a,BAT1_Y-1
+        out (098h),a
+        ld  a,(bat1_x)
+        out (098h),a
+        ld  a,c
+        out (098h),a
+        ld  a,1
+        out (098h),a
+        jr  .oamend
+.nobats:
+        ld  e,2
+.nb2:
+        ld  a,209
+        out (098h),a
+        xor a
+        out (098h),a
+        out (098h),a
+        out (098h),a
+        dec e
+        jr  nz,.nb2
+.oamend:
         ld  a,208
         out (098h),a
         ; --- l'occhio del ciclope (quando cambia stato) ---
@@ -1062,10 +1239,23 @@ ep_audio:
         ld  b,a
         jr  .out
 .n3:
+        dec a
+        jr  nz,.n4
         ; whoosh della mano: verso il chiaro
         ld  a,d
         ld  c,a
         ld  b,9
+        jr  .out
+.n4:
+        ; lo strillo del pipistrello: acutissimo e corto
+        ld  a,d
+        add a,4
+        cp  13
+        jr  c,.sv
+        ld  a,12
+.sv:
+        ld  b,a
+        ld  c,1
 .out:
         ld  a,8
         out (0A0h),a
