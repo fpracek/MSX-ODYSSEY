@@ -78,6 +78,7 @@ nt_qval   equ 0C07Ah    ; valore da scrivere
 nt_qcnt   equ 0C07Bh    ; celle (passo 32 = in colonna); 0 = vuota
 pain_step equ 0C07Ch    ; volto del dolore: 3 sopracciglio,
                         ; 2 bocca-su, 1 bocca-giu (uno per frame)
+pup_last  equ 0C07Dh    ; ultima posa della pupilla mostrata
 room_map  equ 0C100h    ; copia RAM della stanza (768 byte)
 
 STK_COL  equ 15         ; colonna HUD dell'icona del palo
@@ -163,6 +164,7 @@ ep_loop:
         call ep_physics
         call ep_noise_upd
         call ep_cyclops
+        call ep_pupil
         call ep_stab
         call ep_bats
         call ep_timers
@@ -623,6 +625,7 @@ ep_cyclops:
         ld  a,1
         ld  (cyc_state),a
         ld  (ep_eyed),a     ; l'occhio si SPALANCA
+        ld  (pup_last),a    ; ...con l'iride al centro
         ld  a,2             ; ringhio
         ld  (ep_sfx_ty),a
         ld  a,40
@@ -630,6 +633,42 @@ ep_cyclops:
         xor a
         ld  (cyc_t),a
         ret
+
+; ------------------------------------------------------------
+; la pupilla che BALLA: a occhio aperto (all'erta o attacco, non
+; da accecato) l'iride scruta la caverna - centro, destra,
+; centro, sinistra - un passo ogni 16 frame. L'ISR riscrive il
+; blocco dell'occhio solo quando la posa cambia davvero.
+; ------------------------------------------------------------
+ep_pupil:
+        ld  a,(ep_cyc)
+        or  a
+        ret z
+        ld  a,(ep_blind)
+        or  a
+        ret nz
+        ld  a,(cyc_state)
+        or  a
+        ret z               ; dorme: occhio chiuso
+        ld  a,(frame_cnt)
+        rrca
+        rrca
+        rrca
+        rrca
+        and 3
+        ld  hl,pup_seq
+        ld  e,a
+        ld  d,0
+        add hl,de
+        ld  a,(hl)
+        ld  hl,pup_last
+        cp  (hl)
+        ret z
+        ld  (hl),a
+        ld  (ep_eyed),a
+        ret
+pup_seq:
+        db  1,5,1,4         ; centro, destra, centro, sinistra
 
 ; ------------------------------------------------------------
 ; la STOCCATA: in piedi sul sopracciglio, il corpo sopra
@@ -1271,12 +1310,24 @@ ep_isr:
         jr  z,.eop
         cp  3
         jr  z,.ebl
+        cp  4
+        jr  z,.eol
+        cp  5
+        jr  z,.eor
         ld  hl,eye_closed_pat
         ld  de,eye_closed_col
         jr  .eydo
 .eop:
         ld  hl,eye_open_pat
         ld  de,eye_open_col
+        jr  .eydo
+.eol:
+        ld  hl,eye_openl_pat
+        ld  de,eye_openl_col
+        jr  .eydo
+.eor:
+        ld  hl,eye_openr_pat
+        ld  de,eye_openr_col
         jr  .eydo
 .ebl:
         ld  hl,eye_blind_pat

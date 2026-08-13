@@ -52,11 +52,13 @@ BASE_TILES = {
           '..##....', '...#....', '...#....', '........'], C_ROCK),
     9: T(['........', '..#.....', '........', '.....#..',
           '........', '........', '.#......', '........'], C_DECO),
-    # il PALO d'ulivo appuntito: punta (10) e gambo (13)
-    10: T(['...#....', '...#....', '..###...', '..###...',
-           '..###...', '..###...', '..###...', '..###...'], C_BODY),
-    13: T(['..###...', '..###...', '..##....', '..###...',
-           '..###...', '..###...', '..##....', '..###...'], C_BODY),
+    # il PALO d'ulivo: OBLIQUO, punta bianca affilata (indurita al
+    # fuoco) e gambo di legno scuro - che non sembri un pezzo di
+    # piattaforma (quelle sono barre d'oro orizzontali)
+    10: T(['.......#', '......##', '.....##.', '....###.',
+           '...###..', '..###...', '..##....', '.###....'], 15),
+    13: T(['.###....', '.###....', '####....', '.###....',
+           '####....', '.####...', '.####...', '..###...'], C_ROCK),
     # la bocca della caverna, BUIA (si illumina dopo l'accecamento:
     # stessa sagoma del tile 7, ma nera)
     11: T(['...##...', '..####..', '.######.', '.######.',
@@ -83,13 +85,14 @@ EYE_POS = [(bx, by) for by in range(EYE_BY, EYE_BY + EYE_BH)
            for bx in range(EYE_BX, EYE_BX + EYE_BW)]
 
 
-def draw_polifemo(eye_state):
+def draw_polifemo(eye_state, pup=0):
     """Il COLOSSO a 96x112 (quasi mezzo schermo), dal riferimento di
     Fausto: chioma e barba nere a ricci con CIOCCHE D'ARGENTO, viso
     chiaro con le rughe sulla fronte, monociglio aggrottato, naso
     con le narici, baffi a onda, la bocca d'ORO con la linea scura,
     spalle bronzee - e l'occhio unico di 32x16 al centro.
-    eye_state: 0 chiuso (dorme), 1 spalancato, 2 ACCECATO."""
+    eye_state: 0 chiuso (dorme), 1 spalancato, 2 ACCECATO.
+    pup: -1/0/+1 = iride a sinistra/centro/destra (solo aperto)."""
     g = [[0] * 96 for _ in range(112)]
     K, W, GOLD, SKIN, GRAY = 1, 15, 10, 10, 14
 
@@ -192,13 +195,14 @@ def draw_polifemo(eye_state):
         for x in range(32, 64):
             g[y][x] = W
     if eye_state == 1:
+        px = 48 + pup * 4                       # l'iride scruta
         disc(48, 40, 15, 8, K)                  # orbita spalancata
         disc(48, 40, 13, 6, W)                  # sclera
-        disc(48, 40, 8, 6, 8)                   # iride ROSSA, enorme
-        disc(48, 40, 3, 3, K)                   # pupilla
-        g[36][44] = W                           # riflesso
-        g[36][45] = W
-        g[37][44] = W
+        disc(px, 40, 8, 6, 8)                   # iride ROSSA, enorme
+        disc(px, 40, 3, 3, K)                   # pupilla
+        g[36][px - 4] = W                       # riflesso
+        g[36][px - 3] = W
+        g[37][px - 4] = W
     elif eye_state == 2:
         for x in range(34, 63):                 # palpebra gonfia, serrata
             yb = 38 + abs(x - 48) // 10
@@ -592,14 +596,24 @@ def main():
     # lo swap dorme/sveglio/ferito e' una riscrittura in fila
     eye_i0 = POLI_T0 + npoli
     opened = draw_polifemo(1)
+    openl = draw_polifemo(1, -1)
+    openr = draw_polifemo(1, 1)
     blinded = draw_polifemo(2)
     eye_open_p, eye_open_c = [], []
+    eye_openl_p, eye_openl_c = [], []
+    eye_openr_p, eye_openr_c = [], []
     eye_closed_p, eye_closed_c = [], []
     eye_blind_p, eye_blind_c = [], []
     for i, (bx, by) in enumerate(EYE_POS):
         p, c = grid_tile(opened, bx, by)
         eye_open_p += p
         eye_open_c += c
+        p, c = grid_tile(openl, bx, by)
+        eye_openl_p += p
+        eye_openl_c += c
+        p, c = grid_tile(openr, bx, by)
+        eye_openr_p += p
+        eye_openr_c += c
         p, c = grid_tile(blinded, bx, by)
         eye_blind_p += p
         eye_blind_c += c
@@ -677,6 +691,14 @@ def main():
     out.extend(db_lines(eye_open_p))
     out.append('eye_open_col:')
     out.extend(db_lines(eye_open_c))
+    out.append('eye_openl_pat:')
+    out.extend(db_lines(eye_openl_p))
+    out.append('eye_openl_col:')
+    out.extend(db_lines(eye_openl_c))
+    out.append('eye_openr_pat:')
+    out.extend(db_lines(eye_openr_p))
+    out.append('eye_openr_col:')
+    out.extend(db_lines(eye_openr_c))
     out.append('eye_closed_pat:')
     out.extend(db_lines(eye_closed_p))
     out.append('eye_closed_col:')
