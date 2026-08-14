@@ -1094,16 +1094,17 @@ strait_upd:
         ld  (ship_xh),a
         jp  ship_hit
 
-; il giro del gorgo: 8 pose (attributo Y, scarto X dal centro)
+; il giro del gorgo: 8 pose (attributo Y, scarto X dal centro),
+; tutte SOTTO la linea della nave (>=116: mai scanline condivise)
 vtx_tab:
-        db  108,-14
-        db  104,-10
-        db  100,0
-        db  104,10
-        db  108,14
-        db  112,10
+        db  124,-14
+        db  120,-10
         db  116,0
-        db  112,-10
+        db  120,10
+        db  124,14
+        db  128,10
+        db  132,0
+        db  128,-10
 
 ; ------------------------------------------------------------
 ; il gabbiano di buon auspicio: oltre meta' rotta, col sereno,
@@ -2390,24 +2391,17 @@ gauge_on:                   ; label per test/measure.tcl
         dec e
         jr  nz,.hbar
 .nohud:
-        ; --- OAM riscritto ogni frame, con PRIORITA' ALTERNATA:
-        ; un frame la nave e' negli slot alti, quello dopo il
-        ; pericolo. Sulle linee sature (la nave da sola e' gia' a
-        ; 4 sprite) nessuno SPARISCE: nave e mostro sfarfallano a
-        ; meta' frequenza, il classico flicker dell'epoca ---
+        ; --- OAM riscritto ogni frame: la NAVE per prima (slot
+        ; 0-3). I mostri e il gorgo emergono SOTTO la sua linea di
+        ; galleggiamento (riga >=107 contro il fondo nave a 105):
+        ; scanline mai condivise, niente tagli e niente flicker.
+        ; Solo il fulmine la attraversa, per i suoi 12 frame ---
         ld  a,low VR_SPRA
         out (099h),a
         ld  a,(high VR_SPRA)|40h
         out (099h),a
-        ld  a,(frame_cnt)
-        and 1
-        jr  nz,.hazfirst
         call oam_ship_blk
         call oam_hazard_blk
-        jp  oam_gull
-.hazfirst:
-        call oam_hazard_blk
-        call oam_ship_blk
         jp  oam_gull
 
 ; slot pericolo: fulmine/mostro/gorgo (3 sprite, nascosti a
@@ -2483,26 +2477,27 @@ oam_hazard_blk:
         jr  nc,.rkrise
         cp  ROCK_T_SINK+1
         jr  nc,.rkhold
-        ; 21..40: affonda (y scende con t)
+        ; 21..40: affonda (y scende con t). La base 121 tiene il
+        ; mostro SOTTO la linea della nave (mai scanline condivise)
         ld  b,a
         ld  a,ROCK_T_SINK+1
         sub b               ; 1..20
-        add a,93
+        add a,121
         jr  .rkdraw
 .rkrise:
         ; 181..200: emerge dall'acqua
         sub ROCK_T_RISE     ; 1..20
-        add a,93
+        add a,121
         jr  .rkdraw
 .rkhold:
-        ld  a,94
+        ld  a,122
         jr  .rkdraw
 .rkfoam:
         ; schiuma che ribolle: sfarfalla, 2 frame si' e 2 no
         ld  a,(frame_cnt)
         and 2
         jp  nz,.rknone
-        ld  a,99
+        ld  a,127
         out (098h),a
         ld  a,(rock_x)
         out (098h),a
