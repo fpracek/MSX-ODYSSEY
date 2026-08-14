@@ -709,12 +709,12 @@ beast_tab:
         db  1,136,40,140    ; bosco: due, a guardia del sentiero
         db  1,136,120,224
         db  1,136,112,144   ; sala: sentinella fra il muretto
-        db  0,0,0,0         ; (colonna a x104-111) e l'imbocco
-                            ; del cunicolo - mai oltre il muretto,
-                            ; mai dentro il tunnel (soffitto basso
-                            ; = salto negato = danno obbligato)
-        db  0,0,0,0         ; porcile: niente belve - bastano le
-        db  0,0,0,0         ; stelle e i due cunicoli
+        db  1,136,16,88     ; (colonna x104-111) e l'imbocco; il
+                            ; secondo ronda l'anticamera sinistra
+                            ; (mai dentro il tunnel: soffitto
+                            ; basso = salto negato)
+        db  1,136,32,56     ; porcile: ronda corta nella zona
+        db  0,0,0,0         ; d'attesa (mai nel cunicolo c9+)
 
 ; la trasformazione: MAIALE (i piedi restano dove sono)
 to_pig:

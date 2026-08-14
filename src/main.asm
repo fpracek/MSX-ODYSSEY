@@ -89,7 +89,8 @@ GUST_LEN equ 150        ; frame tra le raffiche di Eolo (~2.5s a 60Hz)
 CREW0   equ 12          ; compagni alla partenza
 SERENO_DUR equ 600      ; frame di sereno (~10s a 60Hz)
 STORM_DUR  equ 700      ; frame di tempesta
-TARGET_H  equ 24        ; arrivo: progresso/65536 (~1.5-2 min di rotta)
+TARGET_H  equ 24        ; arrivo della PRIMA tratta (le successive
+                        ; crescono: vedi diff_tab e v_target)
 BOLT_DUR  equ 12        ; frame di fulmine visibile
 BOLT_WARN equ 55        ; preavviso: il cielo "si carica" sul punto
                         ; della scarica (~1s). FAIRNESS: col timone a
@@ -186,6 +187,15 @@ recolor     equ 0C032h  ; 1 = passa a tempesta, 2 = torna al sereno
 bolt_cnt    equ 0C033h  ; contatore fulmini (per i test)
 rock_t      equ 0C034h  ; scoglio attivo: countdown fasi (vedi ROCK_*)
 rock_timer  equ 0C035h  ; attesa del prossimo scoglio (solo sereno)
+
+; la difficolta' della TRATTA corrente (da diff_tab, caricata a
+; ogni init: piu' lontano da Troia = rotte piu' lunghe e cattive)
+v_target    equ 0C088h  ; prog_h d'arrivo
+v_boltmin   equ 0C089h  ; intervallo minimo fra i fulmini
+v_rockmin   equ 0C08Ah  ; intervallo minimo fra i mostri
+v_ser       equ 0C08Bh  ; dw: frame di sereno
+v_sto       equ 0C08Dh  ; dw: frame di tempesta
+v_islp      equ 0C08Fh  ; prog_h a cui l'isola appare
 rock_x      equ 0C036h
 gull_t      equ 0C037h  ; gabbiano in volo: countdown = anche la sua X
 gull_timer  equ 0C038h
@@ -535,7 +545,43 @@ init:
         ld  (rndseed),a     ; mai 0 (LFSR)
         xor a
         ld  (sfx_type),a    ; profilo di default: tuono
-        ld  hl,SERENO_DUR
+        ; la difficolta' della tratta: 6 byte da diff_tab[leg]
+        ld  a,(leg)
+        ld  l,a
+        ld  h,0
+        add hl,hl
+        ld  b,h
+        ld  c,l
+        add hl,hl
+        add hl,bc           ; *6
+        ld  bc,diff_tab
+        add hl,bc
+        ld  a,(hl)
+        ld  (v_target),a
+        inc hl
+        ld  a,(hl)
+        ld  (v_boltmin),a
+        inc hl
+        ld  a,(hl)
+        ld  (v_rockmin),a
+        inc hl
+        ld  e,(hl)          ; sereno/4
+        inc hl
+        ld  d,(hl)          ; tempesta/4
+        inc hl
+        ld  a,(hl)
+        ld  (v_islp),a
+        ld  l,e
+        ld  h,0
+        add hl,hl
+        add hl,hl
+        ld  (v_ser),hl
+        ld  l,d
+        ld  h,0
+        add hl,hl
+        add hl,hl
+        ld  (v_sto),hl
+        ld  hl,(v_ser)
         ld  (wtimer_l),hl
         ld  a,180
         ld  (rock_timer),a
@@ -676,7 +722,7 @@ update_weather:
         xor 1
         ld  (weather),a
         jr  z,.tocalm
-        ld  hl,STORM_DUR
+        ld  hl,(v_sto)
         ld  (wtimer_l),hl
         ld  a,1
         ld  (recolor),a
@@ -690,7 +736,7 @@ update_weather:
         ld  (bolt_timer),a
         ret
 .tocalm:
-        ld  hl,SERENO_DUR
+        ld  hl,(v_ser)
         ld  (wtimer_l),hl
         ld  a,2
         ld  (recolor),a
@@ -713,10 +759,11 @@ update_bolt:
         ld  hl,bolt_timer
         dec (hl)
         ret nz
-        ; nuovo fulmine: prossimo tra 50..113 frame
+        ; nuovo fulmine: prossimo tra v_boltmin..+63 frame
         call rnd8
         and 63
-        add a,50
+        ld  hl,v_boltmin
+        add a,(hl)
         ld  (bolt_timer),a
         call rnd8
         ld  b,a
@@ -801,9 +848,10 @@ update_rock:
         ld  hl,rock_timer
         dec (hl)
         ret nz
-        call rnd8           ; prossimo tra 120..247 frame
+        call rnd8           ; prossimo tra v_rockmin..+127 frame
         and 127
-        add a,120
+        ld  hl,v_rockmin
+        add a,(hl)
         ld  (rock_timer),a
         call rnd8           ; meta' a caso, meta' sulla rotta della nave
         ld  b,a
@@ -932,7 +980,8 @@ update_progress:
         ld  a,(prog_h)
         adc a,0
         ld  (prog_h),a
-        cp  TARGET_H
+        ld  hl,v_target     ; l'arrivo della tratta corrente
+        cp  (hl)
         jr  c,.isl
         ld  a,3             ; terra! comincia l'APPRODO (cinematica)
         ld  (mode),a
@@ -944,7 +993,8 @@ update_progress:
         ret
 .isl:
         ; quasi in porto: l'isola della tratta appare all'orizzonte
-        cp  ISL_PROG
+        ld  hl,v_islp
+        cp  (hl)
         jr  c,.bar
         ld  b,a
         ld  a,(island_flag)
@@ -957,11 +1007,30 @@ update_progress:
 .noisl:
         ld  a,b
 .bar:
+        ; tacche = prog*10 / v_target (a runtime: il target varia
+        ; per tratta; divisione a sottrazioni, max 10 giri)
         ld  l,a
         ld  h,0
-        ld  bc,bar_tab
-        add hl,bc
-        ld  a,(hl)
+        ld  d,h
+        ld  e,l
+        add hl,hl
+        add hl,hl
+        add hl,de
+        add hl,hl           ; HL = prog*10
+        ld  a,(v_target)
+        ld  e,a
+        ld  d,0
+        xor a
+.bdiv:
+        sbc hl,de
+        jr  c,.bfin
+        inc a
+        jr  .bdiv
+.bfin:
+        cp  11
+        jr  c,.bok
+        ld  a,10
+.bok:
         ld  hl,bar_cur
         cp  (hl)
         ret z
@@ -1057,11 +1126,16 @@ rnd8:
         ld  (rndseed),a
         ret
 
-; barra di rotta: tacche piene = prog_h * 10 / TARGET_H (tabella)
-bar_tab:
-        db  0,0,0,1,1,2,2,2,3,3
-        db  4,4,5,5,5,6,6,7,7,7
-        db  8,8,9,9,10
+; la difficolta' per tratta: target, fulmine-min, mostro-min,
+; sereno/4, tempesta/4, isola-all'orizzonte. Piu' lontano da
+; Troia = rotte piu' lunghe, cieli piu' neri, mari piu' pieni.
+diff_tab:
+        db  24,50,120,150,175,21    ; verso i Ciclopi
+        db  28,44,104,135,185,25    ; verso Circe
+        db  32,38, 92,120,195,29    ; verso Eolia
+        db  36,32, 80,105,205,33    ; verso le Sirene
+        db  40,27, 70, 90,215,37    ; verso Scilla e Cariddi
+        db  44,22, 60, 75,225,41    ; verso Itaca
 
 ; ------------------------------------------------------------
 ; vento di Eolo: ogni GUST_LEN frame una nuova raffica-obiettivo

@@ -879,12 +879,12 @@ bat_bite:
 
 ; pipistrelli per stanza: on, quota, x min, x max (x2)
 bat_tab:
-        db  1,108,64,200    ; spiaggia: uno, sui salti bassi
-        db  0,0,0,0
+        db  1,108,64,200    ; spiaggia: sui salti bassi...
+        db  1,84,180,232    ; ...e a guardia dell'ultimo tratto
         db  1,100,96,200    ; caverna: due
         db  1,76,120,224
-        db  1,112,96,176    ; antro: uno, a guardia della scalata
-        db  0,0,0,0
+        db  1,112,96,176    ; antro: sulla scalata bassa...
+        db  1,76,136,224    ; ...e sui salti di mezza quota
 
 ep_timers:
         ld  a,(ep_ifr)

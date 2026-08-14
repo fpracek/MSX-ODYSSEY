@@ -29,7 +29,7 @@ after time 8 {
         } else {
             report [format "tratta forzata: leg=%d (atteso 2)" $l0]
         }
-        debug write memory 0xC02F 24
+        debug write memory 0xC02F 60
         report "arrivo forzato: approdo e sequenza di vittoria..."
     } err]} { report "ERRORE: $err"; exit }
     after time 12 {

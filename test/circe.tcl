@@ -50,16 +50,20 @@ after time 11 {
         debug write memory 0xC054 128
     } err]} { report "ERRORE t11: $err" }
 }
-# la sala: Circe presente, si resta fermi sotto la stella
+# la sala: Circe presente; i leoni si spengono (il test aspetta
+# fermo la stella: i morsi con iframes maschererebbero il colpo)
 after time 12 {
     if {[catch {
         set rm [debug read memory 0xC050]
         set ch [debug read memory 0xC065]
-        if {$rm == 1 && $ch == 1} {
-            report "sala: OK (stanza 1, Circe canta)"
+        set l1 [debug read memory 0xC079]
+        if {$rm == 1 && $ch == 1 && $l1 == 1} {
+            report "sala: OK (stanza 1, Circe canta, 2 leoni)"
         } else {
-            report [format "sala: room=%d circe=%d (attesi 1,1)" $rm $ch]
+            report [format "sala: room=%d circe=%d leone2=%d (attesi 1,1,1)" $rm $ch $l1]
         }
+        debug write memory 0xC075 0
+        debug write memory 0xC079 0
     } err]} { report "ERRORE t12: $err" }
 }
 after time 13 {
@@ -99,6 +103,7 @@ after time 17.5 {
         } else {
             report [format "porcile: room=%d circe=%d (attesi 2,1)" $rm $ch]
         }
+        debug write memory 0xC075 0
     } err]} { report "ERRORE t17.5: $err" }
 }
 # la stella colpisce il fermo allo spawn: seconda trasformazione
