@@ -708,9 +708,10 @@ lion_bite:
 beast_tab:
         db  1,136,40,140    ; bosco: due, a guardia del sentiero
         db  1,136,120,224
-        db  1,136,150,215   ; sala: ronda stretta davanti al
-        db  0,0,0,0         ; cunicolo (a meta' sala si aspetta
-                            ; l'incantesimo in pace)
+        db  1,136,84,144    ; sala: ronda l'ANTICAMERA e fa
+        db  0,0,0,0         ; dietrofront sull'imbocco - dentro
+                            ; il cunicolo (x>160, soffitto basso,
+                            ; salto negato) non entra MAI
 
 ; la trasformazione: MAIALE (i piedi restano dove sono)
 to_pig:
