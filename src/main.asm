@@ -337,11 +337,19 @@ init:
         ld  (BANK3R),a
         jp  circe.ep_start
 .eolo:
+        cp  3
+        jr  nz,.sirene
         ld  a,22            ; 3: EOLO - banchi 22 (codice) e 23 (dati)
         ld  (BANK2R),a
         ld  a,23
         ld  (BANK3R),a
         jp  eolo.ep_start
+.sirene:
+        ld  a,24            ; 4: SIRENE - banchi 24 (codice) e 25 (dati)
+        ld  (BANK2R),a
+        ld  a,25
+        ld  (BANK3R),a
+        jp  sirene.ep_start
 .mare:
 
         ; la pergamena del viaggio: rotta percorsa e prossima tratta
@@ -1970,9 +1978,9 @@ mus_tickC:
         ret
 
 ; quali isole hanno un episodio a terra (il valore = phase:
-; 1 Polifemo, 2 Circe, 3 Eolo)
+; 1 Polifemo, 2 Circe, 3 Eolo, 4 Sirene)
 episode_tab:
-        db  1,2,3,0,0,0
+        db  1,2,3,4,0,0
 
 ; le raffiche di Eolo: perlopiu' favorevoli (il viaggio procede),
 ; con bonacce e colpi contrari da governare col timone
@@ -3067,8 +3075,22 @@ fill_colors:
         DS  0C000h-$,0FFh
         ENDMODULE
 
-; ---- banchi 24-31: riserva (ROM totale 256KB) ----
-        DUP 8
+; ============================================================
+;  BANCHI 24-25: l'episodio delle SIRENE (codice a 8000h nel
+;  banco 24, dati da gen_sirene.py a A000h nel banco 25; il
+;  kernel li mappa su BANK2R/BANK3R quando phase=4)
+; ============================================================
+        MODULE sirene
+        ORG 08000h
+        INCLUDE "sirene.asm"
+        DS  0A000h-$,0FFh
+        ORG 0A000h
+        INCLUDE "sirene_data.asm"
+        DS  0C000h-$,0FFh
+        ENDMODULE
+
+; ---- banchi 26-31: riserva (ROM totale 256KB) ----
+        DUP 6
         ORG 08000h
         DS  02000h,0FFh
         EDUP
