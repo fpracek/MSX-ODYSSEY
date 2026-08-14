@@ -195,6 +195,41 @@ ROOM_HALL = [
 ]
 
 
+# IL PORCILE DELLA MAGA: l'esame finale. Due cunicoli da maiale
+# sovrapposti (rows 17-18 sotto la lastra r16, e rows 11-12 fra le
+# lastre r10 e r13) con risalite DA UOMO in mezzo: servono DUE
+# trasformazioni al posto giusto. Circe osserva dall'alto a destra
+# e le stelle piovono per tutta la scalata; da maiale i gradini di
+# 3 file sono negati (balzo corto) - se ti prende al momento
+# sbagliato, aspetti o ricadi. L'uscita e' in cima al centro.
+ROOM_CELLAR = [
+    '################################',
+    '#                              #',
+    '#  *                       *   #',
+    '#                              #',
+    '#                              #',
+    '#              E               #',
+    '#                              #',
+    '#             ---              #',
+    '#                        C     #',
+    '#                              #',
+    '#        ################      #',
+    '#                              #',
+    '#                              #',
+    '#    ########################  #',
+    '#                              #',
+    '#                              #',
+    '# U      #################   --#',
+    '#                              #',
+    '#                              #',
+    '================================',
+    '################################',
+    '################################',
+    '################################',
+    '################################',
+]
+
+
 def build_room(art):
     assert len(art) == 24
     tiles = []
@@ -351,7 +386,8 @@ def main():
     for t in PICKUP:
         types[t] = 3
 
-    rooms = [build_room(ROOM_WOOD), build_room(ROOM_HALL)]
+    rooms = [build_room(ROOM_WOOD), build_room(ROOM_HALL),
+             build_room(ROOM_CELLAR)]
 
     def find_ch(art, ch):
         for ry, row in enumerate(art):
@@ -414,6 +450,7 @@ def main():
 
     preview(pat, col, rooms[1][0], 'circe_preview.png')
     preview(pat, col, rooms[0][0], 'wood_preview.png')
+    preview(pat, col, rooms[2][0], 'cellar_preview.png')
 
 
 def preview(pat, col, tiles, name):

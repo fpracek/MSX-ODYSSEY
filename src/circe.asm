@@ -713,6 +713,8 @@ beast_tab:
                             ; del cunicolo - mai oltre il muretto,
                             ; mai dentro il tunnel (soffitto basso
                             ; = salto negato = danno obbligato)
+        db  0,0,0,0         ; porcile: niente belve - bastano le
+        db  0,0,0,0         ; stelle e i due cunicoli
 
 ; la trasformazione: MAIALE (i piedi restano dove sono)
 to_pig:

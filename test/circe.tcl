@@ -85,12 +85,40 @@ after time 16 {
         screenshot -raw ./build/shot_circe.png
     } err]} { report "ERRORE t16: $err" }
 }
-# da maiale, dritti all'uscita: la bocca della porta bassa (r18 c27)
+# da maiale, nella porta bassa (r18 c27) -> il PORCILE (stanza 2)
 after time 16.5 {
     debug write memory 0xC052 212
     debug write memory 0xC054 136
 }
-after time 19 {
+after time 17.5 {
+    if {[catch {
+        set rm [debug read memory 0xC050]
+        set ch [debug read memory 0xC065]
+        if {$rm == 2 && $ch == 1} {
+            report "porcile: OK (stanza 2, le stelle piovono)"
+        } else {
+            report [format "porcile: room=%d circe=%d (attesi 2,1)" $rm $ch]
+        }
+    } err]} { report "ERRORE t17.5: $err" }
+}
+# la stella colpisce il fermo allo spawn: seconda trasformazione
+after time 20 {
+    if {[catch {
+        set pg [debug read memory 0xC058]
+        if {$pg > 0} {
+            report [format "porcile: di nuovo MAIALE (timer %d)" $pg]
+        } else {
+            report [format "porcile: pig=%d (atteso >0)" $pg]
+        }
+        screenshot -raw ./build/shot_cellar.png
+    } err]} { report "ERRORE t20: $err" }
+}
+# dritti all'uscita in cima (E r5 c15, centro-maiale a riga 5)
+after time 20.5 {
+    debug write memory 0xC052 116
+    debug write memory 0xC054 36
+}
+after time 23 {
     if {[catch {
         set ph [debug read memory 0xC04F]
         set lg [debug read memory 0xC040]
@@ -99,6 +127,6 @@ after time 19 {
         } else {
             report [format "fuga: phase=%d leg=%d (attesi 0,2)" $ph $lg]
         }
-    } err]} { report "ERRORE t19: $err" }
+    } err]} { report "ERRORE t23: $err" }
     exit
 }
