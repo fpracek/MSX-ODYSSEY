@@ -271,6 +271,12 @@ init:
         ld  h,80h
         call ENASLT
         di
+        ; PRIMA di tutto: hook di frame NEUTRO (RET). Quello di un
+        ; episodio vive in un banco commutabile e le pergamene si
+        ; leggono rimappando proprio la pagina 8000h: un interrupt
+        ; col vecchio hook eseguirebbe la bitmap come codice
+        ld  a,0C9h
+        ld  (HTIMI),a
 
         ; ASCII8: banchi 0..3 sulle 4 pagine
         xor a
