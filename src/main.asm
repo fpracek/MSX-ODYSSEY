@@ -2390,101 +2390,29 @@ gauge_on:                   ; label per test/measure.tcl
         dec e
         jr  nz,.hbar
 .nohud:
-        ; --- OAM riscritto ogni frame: LA NAVE PER PRIMA (slot
-        ; 0-3, priorita' massima): le sue 16 linee sono gia' al
-        ; limite dei 4 sprite, e sulle linee sature dev'essere il
-        ; PERICOLO a cedere qualche riga, mai piu' le vele ---
+        ; --- OAM riscritto ogni frame, con PRIORITA' ALTERNATA:
+        ; un frame la nave e' negli slot alti, quello dopo il
+        ; pericolo. Sulle linee sature (la nave da sola e' gia' a
+        ; 4 sprite) nessuno SPARISCE: nave e mostro sfarfallano a
+        ; meta' frequenza, il classico flicker dell'epoca ---
         ld  a,low VR_SPRA
         out (099h),a
         ld  a,(high VR_SPRA)|40h
         out (099h),a
         ld  a,(frame_cnt)
-        rrca
-        rrca
-        rrca
-        and 15
-        ld  l,a
-        ld  h,0
-        ld  bc,ship_bob
-        add hl,bc
-        ld  a,(hl)
-        ld  hl,ship_y
-        add a,(hl)
-        ld  d,a
-        ld  a,(iframes)
-        or  a
-        jr  z,.snob
-        ld  a,(frame_cnt)
-        and 2
-        jr  z,.snob
-        ld  d,209
-.snob:
-        ld  a,(ship_xh)
-        ld  e,a
-        ld  a,(ship_y)      ; approdo: sagoma lontana (1 sprite)
-        cp  75
-        jr  nc,.sbig
-        ld  a,d
-        out (098h),a
-        ld  a,e
-        add a,8
-        out (098h),a
-        ld  a,36
-        out (098h),a
-        ld  a,SHIP_C_HULL
-        out (098h),a
-        ld  e,3
-.sfl:
-        ld  a,209
-        out (098h),a
-        xor a
-        out (098h),a
-        xor a
-        out (098h),a
-        xor a
-        out (098h),a
-        dec e
-        jr  nz,.sfl
-        jp  .hazards
-.sbig:
-        ld  a,d
-        out (098h),a        ; slot 0: scafo sx
-        ld  a,e
-        out (098h),a
-        xor a
-        out (098h),a
-        ld  a,SHIP_C_HULL
-        out (098h),a
-        ld  a,d
-        out (098h),a        ; slot 1: scafo dx
-        ld  a,e
-        add a,16
-        out (098h),a
-        ld  a,4
-        out (098h),a
-        ld  a,SHIP_C_HULL
-        out (098h),a
-        ld  a,d
-        out (098h),a        ; slot 2: vela sx
-        ld  a,e
-        out (098h),a
-        ld  a,8
-        out (098h),a
-        ld  a,SHIP_C_SAIL
-        out (098h),a
-        ld  a,d
-        out (098h),a        ; slot 3: vela dx
-        ld  a,e
-        add a,16
-        out (098h),a
-        ld  a,12
-        out (098h),a
-        ld  a,SHIP_C_SAIL
-        out (098h),a
-.hazards:
-        ; slot 4-6: fulmine/mostro/gorgo (nascosti a Y=209 quando
-        ; non attivi); sulle linee della nave sono LORO a perdere
-        ; qualche riga, com'e' giusto
+        and 1
+        jr  nz,.hazfirst
+        call oam_ship_blk
+        call oam_hazard_blk
+        jp  oam_gull
+.hazfirst:
+        call oam_hazard_blk
+        call oam_ship_blk
+        jp  oam_gull
+
+; slot pericolo: fulmine/mostro/gorgo (3 sprite, nascosti a
+; Y=209 quando non attivi)
+oam_hazard_blk:
         ld  a,(bolt_t)
         or  a
         jr  z,.bhid
@@ -2541,7 +2469,7 @@ gauge_on:                   ; label per test/measure.tcl
         out (098h),a
         ld  a,c
         out (098h),a
-        jp  .aftership
+        ret
 .bhid:
         ; niente fulmine: negli slot 4-5 puo' esserci il mostro
         ld  a,(rock_t)
@@ -2662,7 +2590,7 @@ gauge_on:                   ; label per test/measure.tcl
         out (098h),a
         ld  a,13
         out (098h),a
-        jp  .aftership
+        ret
 .rknone:
         ; nello STRETTO, il gorgo di CARIDDI: tre schiume che
         ; girano intorno al centro del vortice
@@ -2700,7 +2628,7 @@ gauge_on:                   ; label per test/measure.tcl
         ld  d,a
         dec e
         jr  nz,.vtxl
-        jp  .aftership
+        ret
 .rkoff:
         ld  e,3
 .bhl:
@@ -2708,13 +2636,102 @@ gauge_on:                   ; label per test/measure.tcl
         out (098h),a
         xor a
         out (098h),a
-        ld  a,BOLT_PAT
+        ld  a,BOLT_PAT      ; pattern qualunque, tanto e' nascosto
         out (098h),a
         xor a
         out (098h),a
         dec e
         jr  nz,.bhl
-.aftership:
+        ret
+
+; i 4 sprite della nave (o la sagoma lontana nell'approdo)
+oam_ship_blk:
+        ld  a,(frame_cnt)
+        rrca
+        rrca
+        rrca                ; indice di beccheggio: ogni 8 frame
+        and 15
+        ld  l,a
+        ld  h,0
+        ld  bc,ship_bob
+        add hl,bc
+        ld  a,(hl)
+        ld  hl,ship_y       ; Y variabile: sale durante l'approdo
+        add a,(hl)
+        ld  d,a
+        ld  a,(iframes)     ; colpita: lampeggia
+        or  a
+        jr  z,.snob
+        ld  a,(frame_cnt)
+        and 2
+        jr  z,.snob
+        ld  d,209
+.snob:
+        ld  a,(ship_xh)
+        ld  e,a
+        ld  a,(ship_y)      ; approdo: sagoma lontana (1 sprite)
+        cp  75
+        jr  nc,.sbig
+        ld  a,d
+        out (098h),a
+        ld  a,e
+        add a,8
+        out (098h),a
+        ld  a,36
+        out (098h),a
+        ld  a,SHIP_C_HULL
+        out (098h),a
+        ld  e,3
+.sfl:
+        ld  a,209
+        out (098h),a
+        xor a
+        out (098h),a
+        xor a
+        out (098h),a
+        xor a
+        out (098h),a
+        dec e
+        jr  nz,.sfl
+        ret
+.sbig:
+        ld  a,d
+        out (098h),a        ; scafo sx
+        ld  a,e
+        out (098h),a
+        xor a
+        out (098h),a
+        ld  a,SHIP_C_HULL
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; scafo dx
+        ld  a,e
+        add a,16
+        out (098h),a
+        ld  a,4
+        out (098h),a
+        ld  a,SHIP_C_HULL
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; vela sx
+        ld  a,e
+        out (098h),a
+        ld  a,8
+        out (098h),a
+        ld  a,SHIP_C_SAIL
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; vela dx
+        ld  a,e
+        add a,16
+        out (098h),a
+        ld  a,12
+        out (098h),a
+        ld  a,SHIP_C_SAIL
+        out (098h),a
+        ret
+
+oam_gull:
         ; slot 7: il gabbiano (le sue linee non toccano ne' nave
         ; ne' fulmine: mai piu' di 4 sprite per linea con lui)
         ld  a,(gull_t)
