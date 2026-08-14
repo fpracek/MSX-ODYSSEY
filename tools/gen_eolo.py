@@ -190,9 +190,11 @@ ROOM_SHAFT = [
     '################################',
 ]
 
-# LA SALA DI EOLO: il re sul banco di nuvole, l'OTRE dei venti sul
-# piedistallo, la porta buia che si accende solo con l'otre in
-# mano. Le raffiche alternate qui sono le piu' forti del viaggio.
+# LA SALA DI EOLO: l'OTRE sta SUL banco di nuvole, accanto al re.
+# Il giro completo: scalata a destra (raffiche piu' forti del
+# viaggio), TRAVERSATA del banco controvento fin oltre Eolo,
+# l'otre all'orlo sinistro, poi il tuffo fra gli uccelli e la
+# porta in basso a sinistra, che s'accende solo con l'otre.
 ROOM_HALL_E = [
     '################################',
     '#  v                        v  #',
@@ -201,17 +203,17 @@ ROOM_HALL_E = [
     '#                              #',
     '#                              #',
     '#                              #',
-    '#                              #',
-    '#            C                 #',
+    '#           k                  #',
+    '#           iC                 #',
     '#           ~~~~~~~~           #',
     '#                              #',
-    '#     ---                      #',
-    '#               k              #',
-    '#               i              #',
-    '#              ---             #',
+    '#                   ---        #',
     '#                              #',
     '#                              #',
-    '#         ---                D #',
+    '#                      ---     #',
+    '#                              #',
+    '#                              #',
+    '# D                        --- #',
     '#                              #',
     '================================',
     '################################',

@@ -51,6 +51,9 @@ drone_i   equ 0C069h
 drone_t   equ 0C06Ah
 up_x0     equ 0C06Bh    ; il camino ascensionale (0 = niente)
 up_x1     equ 0C06Ch
+wp_air    equ 0C06Dh    ; spinta della stanza: in volo
+wp_gnd    equ 0C06Eh    ; ...e a terra
+wp_gt     equ 0C06Fh    ; durata della raffica
 bar_last  equ 0C070h
 nt_qoff   equ 0C071h
 nt_qval   equ 0C073h
@@ -250,15 +253,19 @@ ep_physics:
         add hl,de
         ld  (ep_xl),hl
 .wind:
-        ; --- il RESPIRO: la raffica spinge (piena in volo) ---
+        ; --- il RESPIRO: la raffica spinge (piena in volo);
+        ;     la forza e' della STANZA (nella sala e' tempesta) ---
         ld  a,(we_st)
         cp  2
         jp  nz,.vert
-        ld  de,PUSH_AIR
+        ld  a,(wp_air)
+        ld  e,a
+        ld  d,0
         ld  a,(ep_ong)
         or  a
         jr  z,.wf
-        ld  de,PUSH_GND
+        ld  a,(wp_gnd)
+        ld  e,a
 .wf:
         ld  a,(we_dir)
         or  a
@@ -529,7 +536,7 @@ we_upd:
 .togust:
         ld  a,2
         ld  (we_st),a
-        ld  a,GUST_T
+        ld  a,(wp_gt)
         ld  (we_t),a
 .leaf:
         ; la piuma vola nel verso del vento
@@ -704,8 +711,14 @@ beast_tab:
         db  0,0,0,0
         db  1,104,32,208    ; camino: attraversa il volo
         db  0,0,0,0
-        db  1,100,40,112    ; sala: uno a sinistra in basso...
-        db  1,64,96,232     ; ...e uno alto sulla via dell'otre
+        db  1,56,24,72      ; sala: in quota presso il banco...
+        db  1,108,32,136    ; ...e sulla via del tuffo
+
+; il vento per stanza: spinta in volo, a terra, durata raffica
+winds_tab:
+        db  160,64,110      ; pendici: la brezza che insegna
+        db  160,64,120      ; camino: il soffio che solleva
+        db  224,96,140      ; sala: la TEMPESTA del re
 
 ep_timers:
         ld  a,(ep_ifr)
@@ -796,6 +809,24 @@ ep_load_room:
         inc hl
         ld  a,(hl)
         ld  (up_x1),a
+        ; il vento di questa stanza
+        ld  a,(ep_room)
+        ld  e,a
+        ld  d,0
+        ld  l,a
+        ld  h,0
+        add hl,hl
+        add hl,de           ; *3
+        ld  bc,winds_tab
+        add hl,bc
+        ld  a,(hl)
+        ld  (wp_air),a
+        inc hl
+        ld  a,(hl)
+        ld  (wp_gnd),a
+        inc hl
+        ld  a,(hl)
+        ld  (wp_gt),a
         ; gli uccelli di questa stanza
         ld  a,(ep_room)
         add a,a
@@ -866,8 +897,7 @@ ep_finish:
         ld  a,(ep_end)
         dec a
         jr  nz,.lose
-        ld  a,(crew)
-        ld  (crew_keep),a
+        call crew_reward    ; un compagno ritrovato, se ne mancano
         xor a
         ld  (phase),a
         ld  a,(leg)

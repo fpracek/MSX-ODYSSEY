@@ -48,11 +48,17 @@ TILES = {
            '..###...', '.#.#.#..', '...#....', '....#...'], 15),
     13: T(['....#...', '...##...', '...#....', '..##....',
            '...#....', '..##....', '..###...', '..###...'], 12),
-    # il bosco
-    11: T(['.##.###.', '########', '##.####.', '########',
-           '.####.##', '########', '.##.###.', '..##.##.'], 12),
-    16: T(['..###...', '..###...', '..##.#..', '..###...',
-           '.####...', '..###...', '..##....', '..###...'], 6),
+    # il bosco (il vecchio 11/16 squadrato e' andato in pensione:
+    # gli alberi ora sono figure a tile dedicati, vedi draw_tree)
+    # tronco ondulato e radici svasate dell'albero
+    104: T(['....####', '...#####', '...#####', '....####',
+            '....####', '...#####', '..######', '...#####'], 6),
+    105: T(['##......', '###.....', '##......', '###.....',
+            '##......', '##......', '###.....', '##......'], 6),
+    106: T(['...#####', '..######', '.#######', '.#######',
+            '########', '########', '########', '########'], 6),
+    107: T(['###.....', '####....', '#####...', '######..',
+            '#######.', '########', '########', '########'], 6),
     17: T(['#.##.#.#', '########', '########', '#..##..#',
            '########', '##..##..', '########', '########'], 12),
     18: T(['########', '##.###.#', '########', '########',
@@ -69,6 +75,61 @@ PICKUP = {10, 13}
 
 CIRCE_T0 = 20
 CIRCE_W, CIRCE_H = 6, 8      # 48x64
+
+# l'ALBERO del bosco: chioma organica 48x48 (6x6 tile dedicati,
+# stampata piu' volte), tronco ondulato e radici svasate
+TREE_T0 = CIRCE_T0 + CIRCE_W * CIRCE_H      # 68
+TRK_T0 = TREE_T0 + 36                        # 104: tronco+radici
+GREEN_D, GREEN_L = 12, 3
+
+
+def draw_tree():
+    """La chioma: lobi irregolari di verde scuro con la luce da
+    nord-ovest in verde chiaro e buchi di cielo nella massa -
+    niente piu' rettangoli."""
+    g = [[0] * 48 for _ in range(48)]
+
+    def disc(cx, cy, rx, ry, c):
+        for y in range(max(0, cy - ry), min(48, cy + ry + 1)):
+            for x in range(max(0, cx - rx), min(48, cx + rx + 1)):
+                if ((x - cx) * ry) ** 2 + ((y - cy) * rx) ** 2 \
+                        <= (rx * ry) ** 2:
+                    g[y][x] = c
+
+    for cx, cy, rx, ry in ((24, 27, 21, 16), (11, 31, 10, 9),
+                           (37, 31, 10, 9), (16, 15, 11, 9),
+                           (32, 15, 11, 9), (24, 9, 9, 7)):
+        disc(cx, cy, rx, ry, GREEN_D)
+    for cx, cy, rx, ry in ((14, 12, 7, 5), (30, 10, 6, 4),
+                           (20, 23, 8, 5), (10, 27, 5, 4)):
+        disc(cx, cy, rx, ry, GREEN_L)
+    for y in range(48):
+        for x in range(48):
+            if g[y][x] and ((x * 7 + y * 13) % 29) == 0:
+                g[y][x] = 0
+    return g
+
+
+def stamp_tree(tiles, cells, cx):
+    """Chioma (righe 1-6), tronco (7-17), radici (18) a colonna cx.
+    Non copre mai celle gia' occupate (moly, uscita, deco)."""
+    for by in range(6):
+        for bx in range(6):
+            t = cells[by * 6 + bx]
+            if t is None:
+                continue
+            idx = (1 + by) * 32 + cx + bx
+            if tiles[idx] == 0:
+                tiles[idx] = t
+    for ry in range(6, 18):
+        for i in range(2):
+            idx = ry * 32 + cx + 2 + i
+            if tiles[idx] == 0:
+                tiles[idx] = TRK_T0 + i
+    for i in range(2):
+        idx = 18 * 32 + cx + 2 + i
+        if tiles[idx] == 0:
+            tiles[idx] = TRK_T0 + 2 + i
 
 
 def draw_circe():
@@ -138,23 +199,23 @@ LEGEND = {'#': 1, '=': 2, '-': 3, 'b': 4, 'c': 5, ' ': 0, 'E': 7,
 ROOM_WOOD = [
     '################################',
     '#                              #',
-    '#  ffff       ffff       ffff  #',
-    '# ffffff     ffffff     ffffff #',
-    '#  ffff       ffff       ffff  #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt    *    tt    *    tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt         tt   #',
-    '#   tt         tt   k     tt E #',
-    '#   tt         tt   i     tt   #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#         *          *         #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                   k        E #',
+    '#                   i          #',
     'gggggggggggggggggggggggggggggggg',
     '################################',
     '################################',
@@ -360,7 +421,7 @@ LION_B = ['................',
 
 
 def main():
-    n_tiles = CIRCE_T0 + CIRCE_W * CIRCE_H
+    n_tiles = TRK_T0 + 4
     pat = [[0] * 8 for _ in range(n_tiles)]
     col = [[0x14] * 8 for _ in range(n_tiles)]
     for idx, (rows, fg, bg) in TILES.items():
@@ -377,6 +438,17 @@ def main():
             p, c = grid_tile(fig, bx, by)
             pat[CIRCE_T0 + by * CIRCE_W + bx] = p
             col[CIRCE_T0 + by * CIRCE_W + bx] = c
+    # la chioma dell'albero, affettata (le celle vuote non si
+    # stampano: restano cielo)
+    tree = draw_tree()
+    tree_cells = []
+    for by in range(6):
+        for bx in range(6):
+            p, c = grid_tile(tree, bx, by)
+            t = TREE_T0 + by * 6 + bx
+            pat[t] = list(p)
+            col[t] = list(c)
+            tree_cells.append(None if not any(p) else t)
 
     types = [0] * 256
     for t in SOLID:
@@ -388,6 +460,9 @@ def main():
 
     rooms = [build_room(ROOM_WOOD), build_room(ROOM_HALL),
              build_room(ROOM_CELLAR)]
+    # i tre alberi del bosco
+    for cx in (2, 13, 24):
+        stamp_tree(rooms[0][0], tree_cells, cx)
 
     def find_ch(art, ch):
         for ry, row in enumerate(art):

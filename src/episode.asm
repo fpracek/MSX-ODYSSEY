@@ -1073,9 +1073,9 @@ ep_finish:
         ld  a,(ep_end)
         dec a
         jr  nz,.lose
-        ; VITTORIA: la ciurma superstite salpa verso la prossima isola
-        ld  a,(crew)
-        ld  (crew_keep),a
+        ; VITTORIA: la ciurma salpa - e un compagno ritrovato
+        ; sull'isola si unisce, se ne mancano (crew_reward)
+        call crew_reward
         xor a
         ld  (phase),a
         ld  a,(leg)

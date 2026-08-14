@@ -70,7 +70,7 @@ after time 12.5 {
     debug write memory 0xC052 100
     debug write memory 0xC054 8
 }
-# la sala: otre sul piedistallo (stand r14, corolla a r12 c16)
+# la sala: l'otre sta SUL banco di nuvole (orlo sinistro, c12)
 after time 13.5 {
     if {[catch {
         set rm [debug read memory 0xC050]
@@ -82,21 +82,22 @@ after time 13.5 {
         }
         debug write memory 0xC075 0
         debug write memory 0xC079 0
-        debug write memory 0xC052 124
-        debug write memory 0xC054 88
+        debug write memory 0xC052 92
+        debug write memory 0xC054 48
     } err]} { report "ERRORE t13.5: $err" }
 }
 after time 14.5 {
     if {[catch {
         set ot [debug read memory 0xC067]
-        set dr [debug read memory 0xC33D]
+        set dr [debug read memory 0xC322]
         if {$ot == 1 && $dr == 7} {
             report "otre: RACCOLTO (la porta s'illumina)"
         } else {
             report [format "otre: otre=%d porta=%d (attesi 1,7)" $ot $dr]
         }
         screenshot -raw ./build/shot_eolo2.png
-        debug write memory 0xC052 228
+        debug write memory 0xC02B 5
+        debug write memory 0xC052 12
         debug write memory 0xC054 128
     } err]} { report "ERRORE t14.5: $err" }
 }
@@ -104,10 +105,11 @@ after time 17.5 {
     if {[catch {
         set ph [debug read memory 0xC04F]
         set lg [debug read memory 0xC040]
-        if {$ph == 0 && $lg == 3} {
-            report "partenza: VITTORIA (rotta per le Sirene: leg 3)"
+        set ck [debug read memory 0xC042]
+        if {$ph == 0 && $lg == 3 && $ck == 6} {
+            report "partenza: VITTORIA + compagno ritrovato (5 -> 6)"
         } else {
-            report [format "partenza: phase=%d leg=%d (attesi 0,3)" $ph $lg]
+            report [format "partenza: phase=%d leg=%d crew_keep=%d (attesi 0,3,6)" $ph $lg $ck]
         }
     } err]} { report "ERRORE t17.5: $err" }
     exit

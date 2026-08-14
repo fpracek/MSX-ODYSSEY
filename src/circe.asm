@@ -943,8 +943,7 @@ ep_finish:
         ld  a,(ep_end)
         dec a
         jr  nz,.lose
-        ld  a,(crew)
-        ld  (crew_keep),a
+        call crew_reward    ; un compagno ritrovato, se ne mancano
         xor a
         ld  (phase),a
         ld  a,(leg)

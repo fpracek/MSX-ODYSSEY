@@ -1006,6 +1006,20 @@ crew_lose:
         ret
 
 ; ------------------------------------------------------------
+; il premio dell'isola: un compagno ritrovato (se ne mancano).
+; Chiamata dagli episodi alla vittoria, al posto del semplice
+; salvataggio della ciurma in crew_keep.
+; ------------------------------------------------------------
+crew_reward:
+        ld  a,(crew)
+        cp  CREW0
+        jr  nc,.full
+        inc a
+.full:
+        ld  (crew_keep),a
+        ret
+
+; ------------------------------------------------------------
 ; la rotta avanza alla velocita' del mare (= del vento): la
 ; tempesta e' rischio ma anche il modo piu' rapido di arrivare
 ; ------------------------------------------------------------
