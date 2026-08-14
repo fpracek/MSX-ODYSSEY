@@ -197,6 +197,15 @@ v_ser       equ 0C08Bh  ; dw: frame di sereno
 v_sto       equ 0C08Dh  ; dw: frame di tempesta
 v_islp      equ 0C08Fh  ; prog_h a cui l'isola appare
 
+; LO STRETTO di Scilla e Cariddi (tratta 4): la traversata stessa
+; e' il boss doppio - Scilla erutta mirando alla nave, Cariddi
+; risucchia dal vortice, in alternanza
+str_st      equ 0C090h  ; 0 quiete, 1 Scilla, 2 gorgo che si apre,
+                        ; 3 RISUCCHIO
+str_t       equ 0C091h
+vortex_x    equ 0C092h
+str_side    equ 0C093h  ; il lato del prossimo vortice
+
 ; RENZO: digitato sul titolo, la ciurma non si consuma mai.
 ; Il flag vive FUORI dalle aree azzerate (kernel C000-3F,
 ; episodi C050-C3FF) e si spegne solo a nuova partita.
@@ -614,6 +623,12 @@ init:
         ld  (wtimer_l),hl
         ld  a,180
         ld  (rock_timer),a
+        ; lo stretto riparte quieto (RAM fuori dall'area azzerata)
+        xor a
+        ld  (str_st),a
+        ld  (str_side),a
+        ld  a,120
+        ld  (str_t),a
         ld  a,100
         ld  (gull_timer),a
 
@@ -641,9 +656,16 @@ main_loop:
         call update_wind
         call update_speeds
         call update_ship
+        ld  a,(leg)
+        cp  4
+        jr  z,.strait
         call update_weather
         call update_bolt
         call update_rock
+        jr  .prest
+.strait:
+        call strait_upd     ; lo STRETTO: Scilla e Cariddi
+.prest:
         call update_gull
         call update_progress
         call update_timers
@@ -871,6 +893,9 @@ update_rock:
         ld  a,(rock_t)
         or  a
         jr  nz,.active
+        ld  a,(leg)         ; nello STRETTO lo spawn e' di Scilla
+        cp  4
+        ret z
         ld  a,(weather)     ; spawn solo col bel tempo
         or  a
         ret nz
@@ -943,6 +968,138 @@ update_rock:
         cp  20
         ret nc
         jp  ship_hit
+
+; ------------------------------------------------------------
+; LO STRETTO (tratta 4): il boss doppio. In quiete si naviga;
+; poi SCILLA erutta mirando alla nave (la schiuma avvisa, come
+; ogni mostro); poi il gorgo di CARIDDI si apre su un lato,
+; rombando, e RISUCCHIA - il timone perde il braccio di ferro
+; piano piano: si sopravvive partendo lontani e lottando.
+; Schivare l'una avvicina all'altra, come nel mito.
+; ------------------------------------------------------------
+strait_upd:
+        call update_rock    ; le fasi del mostro (lo spawn e' mio)
+        ld  hl,str_t
+        dec (hl)
+        jr  nz,.act
+        ld  a,(str_st)
+        or  a
+        jr  z,.toscilla
+        dec a
+        jr  z,.togorgo
+        dec a
+        jr  z,.topull
+        ; fine risucchio: torna la quiete
+        xor a
+        ld  (str_st),a
+        call rnd8
+        and 63
+        add a,80
+        ld  (str_t),a
+        jr  .act
+.toscilla:
+        ; SCILLA: il mostro erutta DOVE SEI (la schiuma avvisa)
+        ld  a,(ship_xh)
+        ld  (rock_x),a
+        ld  a,ROCK_TOTAL
+        ld  (rock_t),a
+        ld  a,1
+        ld  (str_st),a
+        ld  a,255           ; copre l'intero ciclo del mostro
+        ld  (str_t),a
+        jr  .act
+.togorgo:
+        ; CARIDDI si annuncia: il gorgo si apre sul lato opposto
+        ; al precedente, e romba
+        ld  a,2
+        ld  (str_st),a
+        ld  a,50
+        ld  (str_t),a
+        ld  a,(str_side)
+        xor 1
+        ld  (str_side),a
+        or  a
+        jr  nz,.vleft
+        ld  a,216
+        jr  .vset
+.vleft:
+        ld  a,40
+.vset:
+        ld  (vortex_x),a
+        ld  a,45
+        ld  (thunder_t),a
+        xor a
+        ld  (sfx_type),a
+        jr  .act
+.topull:
+        ld  a,3             ; il RISUCCHIO
+        ld  (str_st),a
+        ld  a,140
+        ld  (str_t),a
+.act:
+        ; --- durante il risucchio: la nave trascina al gorgo ---
+        ld  a,(str_st)
+        cp  3
+        ret c
+        ld  a,(frame_cnt)   ; il rombo non tace mai
+        and 31
+        jr  nz,.drag
+        ld  a,30
+        ld  (thunder_t),a
+        xor a
+        ld  (sfx_type),a
+.drag:
+        ld  a,(vortex_x)
+        ld  b,a
+        ld  a,(ship_xh)
+        cp  b
+        jr  z,.core
+        jr  c,.pr
+        dec a
+        jr  .ps
+.pr:
+        inc a
+.ps:
+        ld  (ship_xh),a
+.core:
+        ; dentro il gorgo? un compagno, e sputato via
+        ld  a,(iframes)
+        or  a
+        ret nz
+        ld  a,(ship_xh)
+        sub b
+        jp  p,.vabs
+        neg
+.vabs:
+        cp  24
+        ret nc
+        ld  a,(ship_xh)
+        cp  b
+        jr  c,.spitl
+        add a,40
+        cp  209
+        jr  c,.spit
+        ld  a,208
+        jr  .spit
+.spitl:
+        sub 40
+        cp  16
+        jr  nc,.spit
+        ld  a,16
+.spit:
+        ld  (ship_xh),a
+        jp  ship_hit
+
+; il giro del gorgo: 8 pose (attributo Y, scarto X dal centro)
+vtx_tab:
+        db  108,-14
+        db  104,-10
+        db  100,0
+        db  104,10
+        db  108,14
+        db  112,10
+        db  116,0
+        db  112,-10
 
 ; ------------------------------------------------------------
 ; il gabbiano di buon auspicio: oltre meta' rotta, col sereno,
@@ -2365,6 +2522,44 @@ gauge_on:                   ; label per test/measure.tcl
         ld  e,1             ; l'ultimo slot fulmine: nascosto
         jr  .bhl
 .rknone:
+        ; nello STRETTO, il gorgo di CARIDDI: tre schiume che
+        ; girano intorno al centro del vortice
+        ld  a,(leg)
+        cp  4
+        jr  nz,.rkoff
+        ld  a,(str_st)
+        cp  2
+        jr  c,.rkoff
+        ld  a,(frame_cnt)
+        rrca
+        and 7
+        ld  d,a             ; la fase del giro
+        ld  e,3
+.vtxl:
+        ld  a,d
+        and 7
+        add a,a
+        ld  l,a
+        ld  h,0
+        ld  bc,vtx_tab
+        add hl,bc
+        ld  a,(hl)
+        out (098h),a
+        inc hl
+        ld  a,(vortex_x)
+        add a,(hl)
+        out (098h),a
+        ld  a,FOAM_PAT
+        out (098h),a
+        ld  a,7             ; l'azzurro del gorgo
+        out (098h),a
+        ld  a,d
+        add a,3
+        ld  d,a
+        dec e
+        jr  nz,.vtxl
+        jp  .oam_ship
+.rkoff:
         ld  e,3
 .bhl:
         ld  a,209           ; sotto lo schermo (208 = terminatore!)
