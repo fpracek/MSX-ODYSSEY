@@ -708,10 +708,11 @@ lion_bite:
 beast_tab:
         db  1,136,40,140    ; bosco: due, a guardia del sentiero
         db  1,136,120,224
-        db  1,136,84,144    ; sala: ronda l'ANTICAMERA e fa
-        db  0,0,0,0         ; dietrofront sull'imbocco - dentro
-                            ; il cunicolo (x>160, soffitto basso,
-                            ; salto negato) non entra MAI
+        db  1,136,112,144   ; sala: sentinella fra il muretto
+        db  0,0,0,0         ; (colonna a x104-111) e l'imbocco
+                            ; del cunicolo - mai oltre il muretto,
+                            ; mai dentro il tunnel (soffitto basso
+                            ; = salto negato = danno obbligato)
 
 ; la trasformazione: MAIALE (i piedi restano dove sono)
 to_pig:
