@@ -329,11 +329,19 @@ init:
         jr  z,.mare
         cp  1
         jp  z,ep_start      ; 1: Polifemo (banchi 2/3, default)
+        cp  2
+        jr  nz,.eolo
         ld  a,6             ; 2: CIRCE - banchi 6 (codice) e 7 (dati)
         ld  (BANK2R),a
         ld  a,7
         ld  (BANK3R),a
         jp  circe.ep_start
+.eolo:
+        ld  a,22            ; 3: EOLO - banchi 22 (codice) e 23 (dati)
+        ld  (BANK2R),a
+        ld  a,23
+        ld  (BANK3R),a
+        jp  eolo.ep_start
 .mare:
 
         ; la pergamena del viaggio: rotta percorsa e prossima tratta
@@ -1948,9 +1956,9 @@ mus_tickC:
         ret
 
 ; quali isole hanno un episodio a terra (il valore = phase:
-; 1 Polifemo, 2 Circe)
+; 1 Polifemo, 2 Circe, 3 Eolo)
 episode_tab:
-        db  1,2,0,0,0,0
+        db  1,2,3,0,0,0
 
 ; le raffiche di Eolo: perlopiu' favorevoli (il viaggio procede),
 ; con bonacce e colpi contrari da governare col timone
@@ -3031,8 +3039,22 @@ fill_colors:
         INCBIN "title_col.bin"
         DS  0A000h-$,0FFh
 
-; ---- banchi 22-31: riserva (ROM totale 256KB) ----
-        DUP 10
+; ============================================================
+;  BANCHI 22-23: l'episodio di EOLO (codice a 8000h nel banco
+;  22, dati da gen_eolo.py a A000h nel banco 23; il kernel li
+;  mappa su BANK2R/BANK3R quando phase=3)
+; ============================================================
+        MODULE eolo
+        ORG 08000h
+        INCLUDE "eolo.asm"
+        DS  0A000h-$,0FFh
+        ORG 0A000h
+        INCLUDE "eolo_data.asm"
+        DS  0C000h-$,0FFh
+        ENDMODULE
+
+; ---- banchi 24-31: riserva (ROM totale 256KB) ----
+        DUP 8
         ORG 08000h
         DS  02000h,0FFh
         EDUP

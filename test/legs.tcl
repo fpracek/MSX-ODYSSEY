@@ -1,7 +1,7 @@
-# Test delle tratte SENZA episodio: si forza la tratta 2 (verso
-# Eolia, niente sbarco); l'arrivo deve far ripartire il viaggio
-# verso le Sirene (leg 3, phase 0). Gli arrivi CON episodio sono
-# coperti da episode.tcl (leg 0) e circe.tcl (leg 1).
+# Test delle tratte SENZA episodio: si forza la tratta 3 (verso le
+# Sirene, niente sbarco); l'arrivo deve far ripartire il viaggio
+# verso Scilla (leg 4, phase 0). Gli arrivi CON episodio sono
+# coperti da episode/circe/eolo.tcl (leg 0/1/2).
 # Esito in build/legs_result.txt.
 
 proc report {msg} {
@@ -11,7 +11,7 @@ proc report {msg} {
 }
 catch {file delete "build/legs_result.txt"}
 # la tratta si forza a titolo visibile (leg e' letto vivo all'arrivo)
-after time 3 { debug write memory 0xC040 2 }
+after time 3 { debug write memory 0xC040 3 }
 # FIRE sul titolo, poi si salpa dalla pergamena (SPACE)
 after time 4 { keymatrixdown 8 1 }
 after time 5 { keymatrixup 8 1 }
@@ -24,10 +24,10 @@ after time 18 { keymatrixup 8 1 }
 after time 8 {
     if {[catch {
         set l0 [debug read memory 0xC040]
-        if {$l0 == 2} {
-            report "tratta forzata: OK (leg=2, verso Eolia)"
+        if {$l0 == 3} {
+            report "tratta forzata: OK (leg=3, verso le Sirene)"
         } else {
-            report [format "tratta forzata: leg=%d (atteso 2)" $l0]
+            report [format "tratta forzata: leg=%d (atteso 3)" $l0]
         }
         debug write memory 0xC02F 60
         report "arrivo forzato: approdo e sequenza di vittoria..."
@@ -37,10 +37,10 @@ after time 8 {
             set l1 [debug read memory 0xC040]
             set md [debug read memory 0xC020]
             set ph [debug read memory 0xC04F]
-            if {$l1 == 3 && $md == 0 && $ph == 0} {
-                report "tratta successiva: OK (leg=3, verso le Sirene)"
+            if {$l1 == 4 && $md == 0 && $ph == 0} {
+                report "tratta successiva: OK (leg=4, verso Scilla)"
             } else {
-                report [format "tratta successiva: leg=%d mode=%d phase=%d (attesi 3,0,0)" \
+                report [format "tratta successiva: leg=%d mode=%d phase=%d (attesi 4,0,0)" \
                     $l1 $md $ph]
             }
             screenshot -raw ./build/shot_leg1.png
