@@ -477,7 +477,26 @@ ci_magic:
         jr  z,.idle
         dec a
         jr  z,.warn
-        ; --- la stella cade ---
+        ; --- la stella cade... e INSEGUE (1px ogni 2 frame):
+        ; schivarla vuole una corsa decisa; col moly in mano il
+        ; colpo non punisce - TRASFORMA. La meccanica si impara
+        ; venendo presi, poi si sfrutta vicino al cunicolo.
+        ld  a,(frame_cnt)
+        and 1
+        jr  nz,.nohome
+        ld  a,(ep_xh)
+        ld  b,a
+        ld  a,(bolt_x)
+        cp  b
+        jr  z,.nohome
+        jr  c,.hr
+        dec a
+        jr  .hs
+.hr:
+        inc a
+.hs:
+        ld  (bolt_x),a
+.nohome:
         ld  a,(bolt_y)
         add a,BOLT_VY
         ld  (bolt_y),a
@@ -689,8 +708,9 @@ lion_bite:
 beast_tab:
         db  1,136,40,140    ; bosco: due, a guardia del sentiero
         db  1,136,120,224
-        db  1,136,110,215   ; sala: uno, che ronda il cunicolo
-        db  0,0,0,0
+        db  1,136,150,215   ; sala: ronda stretta davanti al
+        db  0,0,0,0         ; cunicolo (a meta' sala si aspetta
+                            ; l'incantesimo in pace)
 
 ; la trasformazione: MAIALE (i piedi restano dove sono)
 to_pig:
