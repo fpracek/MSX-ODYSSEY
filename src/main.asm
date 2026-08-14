@@ -104,8 +104,11 @@ BOLT_PAT equ 16         ; pattern sprite del fulmine (dopo la nave)
 FOAM_PAT equ 20         ; schiuma d'avviso del mostro marino
 ROCK_PAT equ 24         ; mostro marino: il collo (la base)
 GULL_PAT equ 28         ; gabbiano (28/32: due frame d'ali)
-SERP_HEAD1 equ 40       ; mostro marino: testa, 2 frame d'ondeggio
+SERP_HEAD1 equ 40       ; serpente (SCILLA, a 3 teste): 2 frame
 SERP_HEAD2 equ 44
+OCTO_H1  equ 48         ; la PIOVRA delle acque aperte: testa
+OCTO_H2  equ 52
+OCTO_BODY equ 56        ; ...e i tentacoli
 CREW_COL equ 1          ; colonna HUD del primo marinaio
 BAR_COL  equ 19         ; colonna HUD della barra di rotta
 ; scoglio: fasi dal contatore unico rock_t (che scende da TOTAL)
@@ -468,11 +471,12 @@ init:
         ld  hl,wavesA2_rowcol
         call fill_colors
 
-        ; pattern sprite: nave + fulmine + schiuma + mostro marino
-        ; (collo e 2 teste) + gabbiano + nave lontana (12 = 384 byte)
+        ; pattern sprite: nave + fulmine + schiuma + serpente
+        ; (collo e 2 teste) + gabbiano + nave lontana + piovra
+        ; (2 teste + tentacoli) = 15 pattern, 480 byte
         ld  hl,ship_patterns
         ld  de,VR_SPRP
-        ld  bc,384
+        ld  bc,480
         call vdp_copy
 
         ; pattern iniziali (preshift 0)
@@ -2386,15 +2390,101 @@ gauge_on:                   ; label per test/measure.tcl
         dec e
         jr  nz,.hbar
 .nohud:
-        ; --- nave + fulmine: OAM riscritto ogni frame ---
+        ; --- OAM riscritto ogni frame: LA NAVE PER PRIMA (slot
+        ; 0-3, priorita' massima): le sue 16 linee sono gia' al
+        ; limite dei 4 sprite, e sulle linee sature dev'essere il
+        ; PERICOLO a cedere qualche riga, mai piu' le vele ---
         ld  a,low VR_SPRA
         out (099h),a
         ld  a,(high VR_SPRA)|40h
         out (099h),a
-        ; sprite 0-2: il fulmine (nascosto a Y=209 quando non attivo);
-        ; e' PRIMA della nave: priorita' alta, e sulle linee dove
-        ; supera il limite di 4/linea a sparire e' la vela dx - un
-        ; flicker accettabile, solo nei frame del lampo
+        ld  a,(frame_cnt)
+        rrca
+        rrca
+        rrca
+        and 15
+        ld  l,a
+        ld  h,0
+        ld  bc,ship_bob
+        add hl,bc
+        ld  a,(hl)
+        ld  hl,ship_y
+        add a,(hl)
+        ld  d,a
+        ld  a,(iframes)
+        or  a
+        jr  z,.snob
+        ld  a,(frame_cnt)
+        and 2
+        jr  z,.snob
+        ld  d,209
+.snob:
+        ld  a,(ship_xh)
+        ld  e,a
+        ld  a,(ship_y)      ; approdo: sagoma lontana (1 sprite)
+        cp  75
+        jr  nc,.sbig
+        ld  a,d
+        out (098h),a
+        ld  a,e
+        add a,8
+        out (098h),a
+        ld  a,36
+        out (098h),a
+        ld  a,SHIP_C_HULL
+        out (098h),a
+        ld  e,3
+.sfl:
+        ld  a,209
+        out (098h),a
+        xor a
+        out (098h),a
+        xor a
+        out (098h),a
+        xor a
+        out (098h),a
+        dec e
+        jr  nz,.sfl
+        jp  .hazards
+.sbig:
+        ld  a,d
+        out (098h),a        ; slot 0: scafo sx
+        ld  a,e
+        out (098h),a
+        xor a
+        out (098h),a
+        ld  a,SHIP_C_HULL
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; slot 1: scafo dx
+        ld  a,e
+        add a,16
+        out (098h),a
+        ld  a,4
+        out (098h),a
+        ld  a,SHIP_C_HULL
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; slot 2: vela sx
+        ld  a,e
+        out (098h),a
+        ld  a,8
+        out (098h),a
+        ld  a,SHIP_C_SAIL
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; slot 3: vela dx
+        ld  a,e
+        add a,16
+        out (098h),a
+        ld  a,12
+        out (098h),a
+        ld  a,SHIP_C_SAIL
+        out (098h),a
+.hazards:
+        ; slot 4-6: fulmine/mostro/gorgo (nascosti a Y=209 quando
+        ; non attivi); sulle linee della nave sono LORO a perdere
+        ; qualche riga, com'e' giusto
         ld  a,(bolt_t)
         or  a
         jr  z,.bhid
@@ -2451,14 +2541,14 @@ gauge_on:                   ; label per test/measure.tcl
         out (098h),a
         ld  a,c
         out (098h),a
-        jp  .oam_ship
+        jp  .aftership
 .bhid:
-        ; niente fulmine: negli slot 0-1 puo' esserci il mostro
+        ; niente fulmine: negli slot 4-5 puo' esserci il mostro
         ld  a,(rock_t)
         or  a
-        jr  z,.rknone
+        jp  z,.rknone
         cp  ROCK_T_GONE+1
-        jr  c,.rknone       ; coda: gia' sparito
+        jp  c,.rknone       ; coda: gia' sparito
         cp  ROCK_T_FOAM+1
         jr  nc,.rkfoam
         cp  ROCK_T_RISE+1
@@ -2483,7 +2573,7 @@ gauge_on:                   ; label per test/measure.tcl
         ; schiuma che ribolle: sfarfalla, 2 frame si' e 2 no
         ld  a,(frame_cnt)
         and 2
-        jr  nz,.rknone
+        jp  nz,.rknone
         ld  a,99
         out (098h),a
         ld  a,(rock_x)
@@ -2493,34 +2583,86 @@ gauge_on:                   ; label per test/measure.tcl
         ld  a,15
         out (098h),a
         ld  e,2
-        jr  .bhl
+        jp  .bhl
 .rkdraw:                    ; A = attributo Y del MOSTRO (base)
         ld  d,a
-        sub 16              ; la testa ondeggia sopra il collo
+        ld  a,(leg)
+        cp  4
+        jr  z,.scylla
+        ; --- la PIOVRA delle acque aperte: testa e tentacoli ---
+        ld  a,d
+        sub 16
         out (098h),a
         ld  a,(rock_x)
         out (098h),a
         ld  a,(frame_cnt)
         and 8
         jr  z,.rkh1
-        ld  a,SERP_HEAD2
+        ld  a,OCTO_H2
         jr  .rkh2
 .rkh1:
-        ld  a,SERP_HEAD1
+        ld  a,OCTO_H1
 .rkh2:
+        out (098h),a
+        ld  a,12            ; verde d'abisso
+        out (098h),a
+        ld  a,d
+        out (098h),a        ; i tentacoli
+        ld  a,(rock_x)
+        out (098h),a
+        ld  a,OCTO_BODY
+        out (098h),a
+        ld  a,12
+        out (098h),a
+        ld  e,1             ; l'ultimo slot pericolo: nascosto
+        jp  .bhl
+.scylla:
+        ; --- SCILLA: TRE teste a ventaglio, che si torcono in
+        ;     controfase, sfalsate di qualche riga ---
+        ld  a,d
+        sub 16              ; la testa centrale, la piu' alta
+        out (098h),a
+        ld  a,(rock_x)
+        out (098h),a
+        ld  a,(frame_cnt)
+        and 8
+        jr  z,.sc1
+        ld  a,SERP_HEAD2
+        jr  .sc2
+.sc1:
+        ld  a,SERP_HEAD1
+.sc2:
         out (098h),a
         ld  a,13            ; magenta d'abisso
         out (098h),a
         ld  a,d
-        out (098h),a        ; il collo
-        ld  a,(rock_x)
+        sub 8               ; la testa sinistra
         out (098h),a
-        ld  a,ROCK_PAT
+        ld  a,(rock_x)
+        sub 14
+        out (098h),a
+        ld  a,(frame_cnt)
+        and 8
+        jr  nz,.sc3
+        ld  a,SERP_HEAD2
+        jr  .sc4
+.sc3:
+        ld  a,SERP_HEAD1
+.sc4:
         out (098h),a
         ld  a,13
         out (098h),a
-        ld  e,1             ; l'ultimo slot fulmine: nascosto
-        jr  .bhl
+        ld  a,d
+        sub 4               ; la testa destra
+        out (098h),a
+        ld  a,(rock_x)
+        add a,14
+        out (098h),a
+        ld  a,SERP_HEAD1
+        out (098h),a
+        ld  a,13
+        out (098h),a
+        jp  .aftership
 .rknone:
         ; nello STRETTO, il gorgo di CARIDDI: tre schiume che
         ; girano intorno al centro del vortice
@@ -2558,7 +2700,7 @@ gauge_on:                   ; label per test/measure.tcl
         ld  d,a
         dec e
         jr  nz,.vtxl
-        jp  .oam_ship
+        jp  .aftership
 .rkoff:
         ld  e,3
 .bhl:
@@ -2572,95 +2714,8 @@ gauge_on:                   ; label per test/measure.tcl
         out (098h),a
         dec e
         jr  nz,.bhl
-.oam_ship:
-        ld  a,(frame_cnt)
-        rrca
-        rrca
-        rrca                ; indice di beccheggio: avanza ogni 8 frame
-        and 15
-        ld  l,a
-        ld  h,0
-        ld  bc,ship_bob
-        add hl,bc
-        ld  a,(hl)
-        ld  hl,ship_y       ; Y variabile: sale durante l'approdo
-        add a,(hl)
-        ld  d,a             ; Y comune ai 4 sprite
-        ; colpita di recente: lampeggia (sparisce un frame su due)
-        ld  a,(iframes)
-        or  a
-        jr  z,.noblink
-        ld  a,(frame_cnt)
-        and 2
-        jr  z,.noblink
-        ld  d,209
-.noblink:
-        ld  a,(ship_xh)
-        ld  e,a             ; X dalla fisica del timone
-        ; approdo: quando la nave e' vicina all'orizzonte diventa
-        ; una sagoma lontana (un solo sprite piccolo)
-        ld  a,(ship_y)
-        cp  75
-        jr  nc,.bigship
-        ld  a,d
-        out (098h),a
-        ld  a,e
-        add a,8
-        out (098h),a
-        ld  a,36            ; pattern nave lontana
-        out (098h),a
-        ld  a,SHIP_C_HULL
-        out (098h),a
-        ld  e,3
-.shl:
-        ld  a,209
-        out (098h),a
-        xor a
-        out (098h),a
-        xor a
-        out (098h),a
-        xor a
-        out (098h),a
-        dec e
-        jr  nz,.shl
-        jp  .aftership
-.bigship:
-        ld  a,d
-        out (098h),a        ; sprite 0: scafo sx
-        ld  a,e
-        out (098h),a
-        xor a
-        out (098h),a        ; pattern 0
-        ld  a,SHIP_C_HULL
-        out (098h),a
-        ld  a,d
-        out (098h),a        ; sprite 1: scafo dx
-        ld  a,e
-        add a,16
-        out (098h),a
-        ld  a,4
-        out (098h),a
-        ld  a,SHIP_C_HULL
-        out (098h),a
-        ld  a,d
-        out (098h),a        ; sprite 2: vela sx
-        ld  a,e
-        out (098h),a
-        ld  a,8
-        out (098h),a
-        ld  a,SHIP_C_SAIL
-        out (098h),a
-        ld  a,d
-        out (098h),a        ; sprite 3: vela dx
-        ld  a,e
-        add a,16
-        out (098h),a
-        ld  a,12
-        out (098h),a
-        ld  a,SHIP_C_SAIL
-        out (098h),a
 .aftership:
-        ; sprite 7: il gabbiano (le sue linee non toccano ne' nave
+        ; slot 7: il gabbiano (le sue linee non toccano ne' nave
         ; ne' fulmine: mai piu' di 4 sprite per linea con lui)
         ld  a,(gull_t)
         or  a
@@ -2882,9 +2937,9 @@ gauge_on:                   ; label per test/measure.tcl
     IF BURN_CHUNKS > 0
         ; scritture extra verso l'area sprite libera (dopo i pattern
         ; della nave) per sondare il limite: ogni chunk = 256 byte
-        ld  a,low (VR_SPRP+1C0h)
+        ld  a,low (VR_SPRP+780h)
         out (099h),a
-        ld  a,(high (VR_SPRP+1C0h))|40h
+        ld  a,(high (VR_SPRP+780h))|40h
         out (099h),a
         ld  hl,04000h       ; sorgente qualunque (ROM)
         ld  e,BURN_CHUNKS

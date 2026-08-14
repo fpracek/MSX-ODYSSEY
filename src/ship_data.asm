@@ -38,5 +38,14 @@ ship_patterns:
 ; mostro marino, testa B (pattern 44)
         db  000h,003h,007h,00Fh,00Fh,007h,003h,001h,003h,007h,007h,007h,003h,003h,007h,007h
         db  0F0h,0FCh,0FEh,06Fh,0FFh,00Eh,06Ch,0F8h,0C0h,080h,0E0h,0E0h,0C0h,0C0h,0E0h,0E0h
+; piovra, testa A (pattern 48)
+        db  007h,01Fh,03Fh,07Fh,067h,067h,0FFh,0FFh,07Fh,03Eh,01Ch,000h,000h,000h,000h,000h
+        db  0E0h,0F8h,0FCh,0FEh,0E6h,0E6h,0FFh,0FFh,0FEh,07Ch,038h,000h,000h,000h,000h,000h
+; piovra, testa B (pattern 52)
+        db  000h,007h,01Fh,03Fh,067h,067h,07Fh,0FFh,07Fh,03Dh,00Ch,000h,000h,000h,000h,000h
+        db  000h,0E0h,0F8h,0FCh,0E6h,0E6h,0FEh,0FFh,0FEh,0BCh,030h,000h,000h,000h,000h,000h
+; piovra, tentacoli (pattern 56)
+        db  03Fh,05Bh,049h,09Bh,091h,052h,04Ah,092h,092h,049h,049h,092h,049h,092h,044h,024h
+        db  0FCh,06Ch,024h,032h,022h,04Ah,048h,066h,022h,024h,024h,048h,024h,044h,090h,024h
 ship_bob:
         db  2,3,3,4,4,4,3,3,2,1,1,0,0,0,1,1

@@ -1,5 +1,5 @@
 ; GENERATO da tools/gen_sky.py - NON MODIFICARE A MANO
-; cielo + sole + foschia + HUD + tratte: "TO CYCLOPS", "TO CIRCE", "TO AEOLIA", "TO SIRENS", "TO SCYLLA", "TO ITHACA"
+; cielo + sole + foschia + HUD + tratte: "TO CYCLOPS", "TO CIRCE", "TO AEOLIA", "TO SIRENS", "STRAIT TO ITHACA", "TO ITHACA"
 N_DESTS equ 6
 sky_pat:
         db  000h,000h,000h,000h,000h,000h,000h,000h
@@ -141,15 +141,15 @@ dest3_pat:
 dest3_row:
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h,002h,000h,003h,004h
         db  005h,006h,007h,003h,000h,000h,000h,000h,000h,000h,00Ah,00Bh,000h,000h,000h,000h
-; "TO SCYLLA"
+; "STRAIT TO ITHACA"
 dest4_pat:
-        db  0FEh,0FEh,010h,010h,010h,010h,010h,038h,03Ch,066h,0C3h,0C3h,0C3h,0C3h,066h,03Ch
-        db  07Eh,0C0h,0C0h,07Ch,006h,006h,0FCh,000h,03Eh,062h,0C0h,0C0h,0C0h,0C0h,062h,03Eh
-        db  0C6h,0C6h,06Ch,038h,010h,010h,010h,000h,0C0h,0C0h,0C0h,0C0h,0C0h,0C0h,0FEh,000h
-        db  018h,018h,03Ch,024h,066h,042h,0C3h,0C3h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  07Eh,0C0h,0C0h,07Ch,006h,006h,0FCh,000h,0FEh,0FEh,010h,010h,010h,010h,010h,038h
+        db  0FCh,0C6h,0C6h,0FCh,0D8h,0CCh,0C6h,000h,018h,018h,03Ch,024h,066h,042h,0C3h,0C3h
+        db  07Ch,010h,010h,010h,010h,010h,010h,07Ch,03Ch,066h,0C3h,0C3h,0C3h,0C3h,066h,03Ch
+        db  0C6h,0C6h,0C6h,0FEh,0C6h,0C6h,0C6h,0C6h,03Eh,062h,0C0h,0C0h,0C0h,0C0h,062h,03Eh
 dest4_row:
-        db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h,002h,000h,003h,004h
-        db  005h,006h,006h,007h,000h,000h,000h,000h,000h,000h,00Ah,00Bh,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,000h,000h,000h,001h,002h,003h,004h,005h,002h,000h,002h
+        db  006h,000h,005h,002h,007h,004h,00Dh,004h,000h,000h,00Ah,00Bh,000h,000h,000h,000h
 ; "TO ITHACA"
 dest5_pat:
         db  0FEh,0FEh,010h,010h,010h,010h,010h,038h,03Ch,066h,0C3h,0C3h,0C3h,0C3h,066h,03Ch

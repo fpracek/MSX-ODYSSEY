@@ -39,7 +39,7 @@ C_SEA = 7       # cyan della banda C (per la foschia)
 # Ogni nome usa al massimo 8 lettere diverse (gli slot tile liberi
 # del terzo 0: 1-7 e 13); il main carica il blocco della tratta.
 DESTS = ['TO CYCLOPS', 'TO CIRCE', 'TO AEOLIA',
-         'TO SIRENS', 'TO SCYLLA', 'TO ITHACA']
+         'TO SIRENS', 'STRAIT TO ITHACA', 'TO ITHACA']
 GLYPH_SLOTS = [1, 2, 3, 4, 5, 6, 7, 13]
 TEXT_ROW = 2
 SUN_COL = 26    # tile 2x2 alle colonne 26-27, righe 1-2
