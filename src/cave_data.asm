@@ -548,7 +548,7 @@ room0:
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
 room0_meta:
-        db  24,136,0   ; start x, start y, ciclope
+        db  24,128,0   ; start x, start y, ciclope
 room1:
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
@@ -599,7 +599,7 @@ room1:
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
 room1_meta:
-        db  40,136,1   ; start x, start y, ciclope
+        db  40,128,1   ; start x, start y, ciclope
 room2:
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
         db  001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h,001h
