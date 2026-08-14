@@ -697,8 +697,7 @@ lion_bite:
         ld  a,8
 .px:
         ld  (ep_xh),a
-        ld  hl,crew
-        dec (hl)
+        call crew_lose
         ret nz
         ld  a,2
         ld  (ep_end),a
@@ -745,8 +744,7 @@ ep_hit:
         ld  (ep_sfx_t),a
         ld  a,1
         ld  (ep_hud),a
-        ld  hl,crew
-        dec (hl)
+        call crew_lose
         ret nz
         ld  a,2
         ld  (ep_end),a

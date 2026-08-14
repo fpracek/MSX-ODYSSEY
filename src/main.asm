@@ -196,6 +196,12 @@ v_rockmin   equ 0C08Ah  ; intervallo minimo fra i mostri
 v_ser       equ 0C08Bh  ; dw: frame di sereno
 v_sto       equ 0C08Dh  ; dw: frame di tempesta
 v_islp      equ 0C08Fh  ; prog_h a cui l'isola appare
+
+; RENZO: digitato sul titolo, la ciurma non si consuma mai.
+; Il flag vive FUORI dalle aree azzerate (kernel C000-3F,
+; episodi C050-C3FF) e si spegne solo a nuova partita.
+god_flag    equ 0C440h  ; 0A5h = attivo
+renzo_idx   equ 0C441h  ; avanzamento sequenza (bit7 = tenuto)
 rock_x      equ 0C036h
 gull_t      equ 0C037h  ; gabbiano in volo: countdown = anche la sua X
 gull_timer  equ 0C038h
@@ -302,6 +308,7 @@ init:
         xor a
         ld  (leg),a
         ld  (phase),a
+        ld  (god_flag),a    ; RENZO si ridigita a ogni partita
         ld  a,CREW0
         ld  (crew_keep),a
         ld  a,05Ah
@@ -961,11 +968,27 @@ ship_hit:
         ld  (sfx_type),a
         ld  a,1
         ld  (hud_dirty),a
-        ld  hl,crew
-        dec (hl)
+        call crew_lose
         ret nz
         ld  a,2             ; ciurma finita: naufragio
         ld  (mode),a
+        ret
+
+; ------------------------------------------------------------
+; toglie un compagno... a meno che RENZO non vegli sulla nave.
+; NZ = si prosegue, Z = ciurma finita. Vive nel kernel (banco 0,
+; sempre mappato): la chiamano anche gli episodi.
+; ------------------------------------------------------------
+crew_lose:
+        ld  a,(god_flag)
+        cp  0A5h
+        jr  nz,.real
+        ld  a,(crew)        ; immortali: la ciurma non si tocca
+        or  a
+        ret
+.real:
+        ld  hl,crew
+        dec (hl)
         ret
 
 ; ------------------------------------------------------------
@@ -1460,6 +1483,8 @@ fade_out:
 ; in dissolvenza; FIRE per passare alla pergamena
 ; ------------------------------------------------------------
 title_show:
+        xor a
+        ld  (renzo_idx),a   ; il matcher RENZO parte pulito
         call music_title
         ld  a,TITLE_BANK
         call show_bitmap_dark
@@ -1470,6 +1495,7 @@ title_show:
         call music_tick
         call cheat_check    ; GOTO1..6: si salpa dritti alla tratta
         jr  nz,.go
+        call renzo_check    ; RENZO: la ciurma diventa immortale
         call read_trig
         cp  0FFh
         jr  nz,.wait
@@ -1548,6 +1574,92 @@ cheat_check:
         ld  (phase),a       ; sbarco diretto se c'e' l'episodio
         or  0FFh            ; NZ: scattato
         ret
+
+; ------------------------------------------------------------
+; RENZO sul titolo: la ciurma non si consuma mai. Stesso schema
+; del matcher GOTO (tasto atteso, bit7 = gia' contato); al
+; completamento suona la conferma e fissa god_flag.
+; ------------------------------------------------------------
+renzo_check:
+        ld  a,(renzo_idx)
+        and 07h
+        cp  5
+        ret z               ; gia' attivo: non si riattiva
+        add a,a
+        ld  l,a
+        ld  h,0
+        ld  bc,renzo_tab
+        add hl,bc
+        ld  a,(hl)
+        inc hl
+        push hl
+        call SNSMAT
+        pop hl
+        and (hl)
+        jr  z,.hit
+        ld  a,(renzo_idx)   ; rilasciato: riarma l'accettazione
+        and 07h
+        ld  (renzo_idx),a
+        ret
+.hit:
+        ld  a,(renzo_idx)
+        bit 7,a
+        ret nz              ; ancora tenuto: gia' contato
+        inc a
+        or  80h
+        ld  (renzo_idx),a
+        and 07h
+        cp  5
+        ret nz
+        ; R-E-N-Z-O: la protezione veglia sulla ciurma
+        ld  a,0A5h
+        ld  (god_flag),a
+        ld  a,5
+        ld  (renzo_idx),a
+        ; la conferma: tre note che salgono (la musica del titolo
+        ; riprende da sola al tick successivo)
+        ld  hl,renzo_notes
+        ld  d,3
+.n:
+        ld  a,(hl)
+        inc hl
+        push hl
+        push de
+        ld  e,a
+        xor a               ; tono A: la nota
+        out (0A0h),a
+        ld  a,e
+        out (0A1h),a
+        ld  a,1
+        out (0A0h),a
+        xor a
+        out (0A1h),a
+        ld  a,8
+        out (0A0h),a
+        ld  a,13
+        out (0A1h),a
+        ld  b,12
+.w:
+        halt
+        djnz .w
+        pop de
+        pop hl
+        dec d
+        jr  nz,.n
+        ld  a,8
+        out (0A0h),a
+        xor a
+        out (0A1h),a
+        ret
+renzo_notes:
+        db  170,127,85      ; MI5, LA5, MI6: la scala dell'immortale
+; la sequenza: (riga, maschera) di R, E, N, Z, O
+renzo_tab:
+        db  4,80h
+        db  3,04h
+        db  4,08h
+        db  5,80h
+        db  4,10h
 
 ; la sequenza: (riga, maschera) di G, O, T, O
 cheat_tab:

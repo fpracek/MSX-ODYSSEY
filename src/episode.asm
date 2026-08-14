@@ -747,8 +747,7 @@ ep_hit:
         ld  a,224
 .kb:
         ld  (ep_xh),a
-        ld  hl,crew
-        dec (hl)
+        call crew_lose
         ret nz
         ld  a,2             ; la ciurma e' finita
         ld  (ep_end),a
@@ -870,8 +869,7 @@ bat_bite:
         ld  (ep_xh),a
         ld  a,NZ_BAT
         call ep_addnoise
-        ld  hl,crew
-        dec (hl)
+        call crew_lose
         ret nz
         ld  a,2             ; la ciurma e' finita
         ld  (ep_end),a
