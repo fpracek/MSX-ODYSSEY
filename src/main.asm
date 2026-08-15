@@ -357,11 +357,19 @@ init:
         ld  (BANK3R),a
         jp  eolo.ep_start
 .sirene:
+        cp  4
+        jr  nz,.itaca
         ld  a,24            ; 4: SIRENE - banchi 24 (codice) e 25 (dati)
         ld  (BANK2R),a
         ld  a,25
         ld  (BANK3R),a
         jp  sirene.ep_start
+.itaca:
+        ld  a,26            ; 5: ITACA - banchi 26 (codice) e 27 (dati)
+        ld  (BANK2R),a
+        ld  a,27
+        ld  (BANK3R),a
+        jp  itaca.ep_start
 .mare:
 
         ; la pergamena del viaggio: rotta percorsa e prossima tratta
@@ -2143,9 +2151,9 @@ mus_tickC:
         ret
 
 ; quali isole hanno un episodio a terra (il valore = phase:
-; 1 Polifemo, 2 Circe, 3 Eolo, 4 Sirene)
+; 1 Polifemo, 2 Circe, 3 Eolo, 4 Sirene, 5 ITACA - il finale)
 episode_tab:
-        db  1,2,3,4,0,0
+        db  1,2,3,4,0,5
 
 ; le raffiche di Eolo: perlopiu' favorevoli (il viaggio procede),
 ; con bonacce e colpi contrari da governare col timone
@@ -3385,8 +3393,22 @@ fill_colors:
         DS  0C000h-$,0FFh
         ENDMODULE
 
-; ---- banchi 26-31: riserva (ROM totale 256KB) ----
-        DUP 6
+; ============================================================
+;  BANCHI 26-27: ITACA, il finale (codice a 8000h nel banco 26,
+;  dati da gen_itaca.py a A000h nel banco 27; il kernel li mappa
+;  su BANK2R/BANK3R quando phase=5)
+; ============================================================
+        MODULE itaca
+        ORG 08000h
+        INCLUDE "itaca.asm"
+        DS  0A000h-$,0FFh
+        ORG 0A000h
+        INCLUDE "itaca_data.asm"
+        DS  0C000h-$,0FFh
+        ENDMODULE
+
+; ---- banchi 28-31: riserva (ROM totale 256KB) ----
+        DUP 4
         ORG 08000h
         DS  02000h,0FFh
         EDUP
