@@ -12,6 +12,8 @@ rem        (combinabili: avvia_odyssey fast 60)
 rem ============================================================
 cd /d "%~dp0"
 set "OPENMSX=E:\Dropbox\FAUSTO\SVILUPPI\MSX\EMULATORI\openMSX"
+rem audio a bassa latenza: forza il backend WASAPI di Windows
+set "SDL_AUDIODRIVER=wasapi"
 set "MACHINE=Sony_HB-55P"
 if not exist build mkdir build
 
