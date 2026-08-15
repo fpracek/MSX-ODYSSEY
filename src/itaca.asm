@@ -46,6 +46,7 @@ door_td   equ 0C068h
 dead      equ 0C069h    ; Proci abbattuti (strage)
 spawn_t   equ 0C06Ah
 door_off  equ 0C06Bh    ; dw: offset NT della porta di stanza
+charge_f  equ 0C06Dh    ; 1 = i Proci avanzano (carica a scatti)
 bar_last  equ 0C070h
 nt_qoff   equ 0C071h
 nt_qval   equ 0C073h
@@ -630,10 +631,22 @@ it_proci:
         ld  b,a
         jp  proco_bite
 .strage:
-        ; --- la carica: dritti verso Ulisse ---
+        ; --- la carica A SCATTI: 40 frame d'assalto, 24 di
+        ; spavalderia ferma - le pause sono le finestre di tiro ---
+        ld  a,(frame_cnt)
+        and 63
+        cp  40
+        ld  a,1
+        jr  c,.chset
+        xor a
+.chset:
+        ld  (charge_f),a
         ld  a,(b0_on)
         or  a
         jr  z,.s0done
+        ld  a,(charge_f)
+        or  a
+        jr  z,.s0c          ; in pausa: niente passo, morso attivo
         ld  a,(ep_xh)
         ld  b,a
         ld  a,(b0_x)
@@ -654,10 +667,32 @@ it_proci:
         ld  a,(b0_x)
         ld  b,a
         call proco_bite
+        jr  nc,.s0done
+        ; il colpo e' andato: si ritrae, pavoneggiandosi
+        ld  a,(ep_xh)
+        ld  b,a
+        ld  a,(b0_x)
+        cp  b
+        jr  c,.s0bl
+        add a,48
+        cp  225
+        jr  c,.s0bs
+        ld  a,224
+        jr  .s0bs
+.s0bl:
+        sub 48
+        cp  16
+        jr  nc,.s0bs
+        ld  a,16
+.s0bs:
+        ld  (b0_x),a
 .s0done:
         ld  a,(b1_on)
         or  a
         jr  z,.respawn
+        ld  a,(charge_f)
+        or  a
+        jr  z,.s1c
         ld  a,(ep_xh)
         ld  b,a
         ld  a,(b1_x)
@@ -678,6 +713,24 @@ it_proci:
         ld  a,(b1_x)
         ld  b,a
         call proco_bite
+        jr  nc,.respawn
+        ld  a,(ep_xh)
+        ld  b,a
+        ld  a,(b1_x)
+        cp  b
+        jr  c,.s1bl
+        add a,48
+        cp  225
+        jr  c,.s1bs
+        ld  a,224
+        jr  .s1bs
+.s1bl:
+        sub 48
+        cp  16
+        jr  nc,.s1bs
+        ld  a,16
+.s1bs:
+        ld  (b1_x),a
 .respawn:
         ; entra il prossimo, se la sala non e' vuota di vivi
         ld  a,(b0_on)
@@ -718,21 +771,22 @@ it_proci:
         ret
 
 ; B = x del Proco: ha agguantato? (piedi bassi e |dx| < 12)
+; Carry = morso avvenuto (il chiamante fa ritrarre il Proco)
 proco_bite:
         ld  a,(ep_ifr)
         or  a
-        ret nz
+        jr  nz,.no
         ld  a,(ep_yh)
         add a,24
         cp  144
-        ret c               ; in volo: scavalcato
+        jr  c,.no           ; in volo: scavalcato
         ld  a,(ep_xh)
         sub b
         jp  p,.xa
         neg
 .xa:
         cp  12
-        ret nc
+        jr  nc,.no
         ld  a,EP_IFR
         ld  (ep_ifr),a
         ld  a,1
@@ -757,9 +811,16 @@ proco_bite:
 .px:
         ld  (ep_xh),a
         call crew_lose
-        ret nz
+        jr  z,.dead2
+        scf
+        ret
+.dead2:
         ld  a,2
         ld  (ep_end),a
+        scf
+        ret
+.no:
+        or  a               ; niente morso: carry pulito
         ret
 
 ep_timers:
@@ -885,8 +946,8 @@ proci_tab:
         db  1,138,140,208
         db  0,0,0,0         ; la prova: silenzio e rispetto
         db  0,0,0,0
-        db  1,138,16,224    ; la strage: entrano in due,
-        db  1,138,16,224    ; e ne arrivano cinque
+        db  1,138,140,224   ; la strage: entrano DA LONTANO (li
+        db  1,138,140,224   ; vedi arrivare), e ne arrivano cinque
         db  0,0,0,0         ; il talamo: solo la famiglia,
         db  0,0,0,0         ; e la pace
 
