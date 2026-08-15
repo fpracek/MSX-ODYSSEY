@@ -167,6 +167,7 @@ ep_loop:
         call ep_noise_upd
         call ep_cyclops
         call ep_pupil
+        call ep_repel
         call ep_stab
         call ep_bats
         call ep_timers
@@ -673,6 +674,49 @@ ep_pupil:
         ret
 pup_seq:
         db  1,5,1,4         ; centro, destra, centro, sinistra
+
+; ------------------------------------------------------------
+; l'occhio APERTO ti vede: alla testa non ci si avvicina.
+; Nella zona del viso (in alto, verso il gigante) una forza -
+; lo sguardo, il braccio pronto - ti respinge; se si sveglia
+; mentre sei sulla fronte, ti spazza giu'. Da accecato, niente:
+; non vede piu'.
+; ------------------------------------------------------------
+ep_repel:
+        ld  a,(ep_cyc)
+        or  a
+        ret z
+        ld  a,(ep_blind)
+        or  a
+        ret nz
+        ld  a,(cyc_state)
+        or  a
+        ret z               ; dorme: via libera alla scalata
+        ld  a,(ep_yh)
+        cp  81
+        ret nc              ; in basso: fuori dalla zona-viso
+        ld  a,(ep_xh)
+        add a,8
+        cp  97
+        ret nc              ; lontano dal viso
+        ld  a,(ep_xh)       ; respinto: 2px a frame, piu' della
+        add a,2             ; camminata - avvicinarsi e' inutile
+        cp  233
+        jr  c,.rok
+        ld  a,232
+.rok:
+        ld  (ep_xh),a
+        ld  a,(frame_cnt)
+        and 31
+        ret nz
+        ld  a,(ep_sfx_t)
+        or  a
+        ret nz
+        ld  a,2             ; ringhia: ti tiene d'occhio
+        ld  (ep_sfx_ty),a
+        ld  a,12
+        ld  (ep_sfx_t),a
+        ret
 
 ; ------------------------------------------------------------
 ; NZ = pronto alla stoccata: palo in mano, in piedi sul
@@ -1396,6 +1440,26 @@ ep_isr:
         jr  z,.nohud
         xor a
         ld  (ep_hud),a
+        ; il colore della ciurma: bianco, GIALLO (<=6), ROSSO (<=2)
+        ld  a,(crew)
+        cp  3
+        ld  b,84h
+        jr  c,.cwset
+        cp  7
+        ld  b,0B4h
+        jr  c,.cwset
+        ld  b,0F4h
+.cwset:
+        ld  a,low (VR_COL+HUD_MAN*8)
+        out (099h),a
+        ld  a,(high (VR_COL+HUD_MAN*8))|40h
+        out (099h),a
+        ld  e,8
+.cwl:
+        ld  a,b
+        out (098h),a
+        dec e
+        jr  nz,.cwl
         ld  a,low (VR_NAME+CREW_COL)
         out (099h),a
         ld  a,(high (VR_NAME+CREW_COL))|40h

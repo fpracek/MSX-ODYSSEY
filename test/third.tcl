@@ -65,6 +65,22 @@ after time 13.5 {
         }
     } err]} { report "ERRORE t13.5: $err" }
 }
+# con l'OCCHIO APERTO il viso e' vietato: respinto
+after time 13.1 {
+    debug write memory 0xC059 1
+    debug write memory 0xC052 80
+    debug write memory 0xC054 60
+}
+after time 13.7 {
+    if {[catch {
+        set x [debug read memory 0xC052]
+        if {$x >= 87} {
+            report [format "occhio aperto: RESPINTO (x 80 -> %d, al confine)" $x]
+        } else {
+            report [format "occhio aperto: x=%d (atteso >=87)" $x]
+        }
+    } err]} { report "ERRORE t13.7: $err" }
+}
 # sul sopracciglio, ciclope addormentato: la STOCCATA
 after time 14 {
     debug write memory 0xC058 0

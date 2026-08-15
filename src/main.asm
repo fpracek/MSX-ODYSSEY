@@ -1352,7 +1352,9 @@ rnd8:
 ; 24 (allungarla annoia): a crescere sono i cieli neri, i fulmini
 ; e i mostri.
 diff_tab:
-        db  24,50,120,150,175,21    ; verso i Ciclopi
+        db  12,50,120,150,175,9     ; verso i Ciclopi: CORTA, il
+                                    ; novizio deve vedere presto
+                                    ; che il mare porta a terra
         db  24,44,104,135,185,21    ; verso Circe
         db  24,38, 92,120,195,21    ; verso Eolia
         db  24,32, 80,105,205,21    ; verso le Sirene
@@ -2293,6 +2295,8 @@ gauge_on:                   ; label per test/measure.tcl
 .recdone:
         xor a
         ld  (recolor),a
+        ld  a,1             ; il recolor riscrive anche i colori
+        ld  (hud_dirty),a   ; del tile-ciurma: l'HUD li riafferma
 .norec:
         ; --- Itaca appare all'orizzonte (una volta, su richiesta
         ;     del main quando la rotta e' quasi compiuta) ---
@@ -2351,6 +2355,35 @@ gauge_on:                   ; label per test/measure.tcl
         jr  z,.nohud
         xor a
         ld  (hud_dirty),a
+        ; il colore della ciurma: bianco, GIALLO (<=6), ROSSO (<=2)
+        ld  a,(weather)
+        or  a
+        ld  c,5             ; sfondo: cielo sereno
+        jr  z,.cwbg
+        ld  c,1             ; ...o di tempesta
+.cwbg:
+        ld  a,(crew)
+        cp  3
+        ld  b,80h           ; rosso
+        jr  c,.cwset
+        cp  7
+        ld  b,0B0h          ; giallo
+        jr  c,.cwset
+        ld  b,0F0h          ; bianco
+.cwset:
+        ld  a,b
+        or  c
+        ld  b,a
+        ld  a,low (VR_COL+HUD_MAN*8)
+        out (099h),a
+        ld  a,(high (VR_COL+HUD_MAN*8))|40h
+        out (099h),a
+        ld  e,8
+.cwl:
+        ld  a,b
+        out (098h),a
+        dec e
+        jr  nz,.cwl
         ld  a,low (VR_NAME+CREW_COL)
         out (099h),a
         ld  a,(high (VR_NAME+CREW_COL))|40h

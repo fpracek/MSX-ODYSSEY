@@ -1107,6 +1107,26 @@ ep_isr:
         jr  z,.nohud
         xor a
         ld  (ep_hud),a
+        ; il colore della ciurma: bianco, GIALLO (<=6), ROSSO (<=2)
+        ld  a,(crew)
+        cp  3
+        ld  b,84h
+        jr  c,.cwset
+        cp  7
+        ld  b,0B4h
+        jr  c,.cwset
+        ld  b,0F4h
+.cwset:
+        ld  a,low (VR_COL+HUD_MAN*8)
+        out (099h),a
+        ld  a,(high (VR_COL+HUD_MAN*8))|40h
+        out (099h),a
+        ld  e,8
+.cwl:
+        ld  a,b
+        out (098h),a
+        dec e
+        jr  nz,.cwl
         ld  a,low (VR_NAME+CREW_COL)
         out (099h),a
         ld  a,(high (VR_NAME+CREW_COL))|40h
