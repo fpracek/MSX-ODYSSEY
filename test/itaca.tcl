@@ -115,7 +115,21 @@ after time 18 {
         debug write memory 0xC054 128
     } err]} { report "ERRORE t18: $err" }
 }
-after time 21 {
+# il TALAMO: Penelope, Telemaco, il letto d'ulivo - e l'uscita
+after time 19 {
+    if {[catch {
+        set rm [debug read memory 0xC050]
+        if {$rm == 3} {
+            report "talamo: OK (la famiglia attende)"
+        } else {
+            report [format "talamo: stanza %d (attesa 3)" $rm]
+        }
+        screenshot -raw ./build/shot_itaca3.png
+        debug write memory 0xC052 220
+        debug write memory 0xC054 128
+    } err]} { report "ERRORE t19: $err" }
+}
+after time 22 {
     if {[catch {
         set lg [debug read memory 0xC040]
         set ph [debug read memory 0xC04F]
@@ -124,6 +138,6 @@ after time 21 {
         } else {
             report [format "finale: leg=%d phase=%d (attesi 0,0)" $lg $ph]
         }
-    } err]} { report "ERRORE t21: $err" }
+    } err]} { report "ERRORE t22: $err" }
     exit
 }

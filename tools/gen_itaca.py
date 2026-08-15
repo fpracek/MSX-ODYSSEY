@@ -55,6 +55,11 @@ TILES = {
     # il pavimento del megaron
     17: T(['########', '##.###.#', '########', '########',
            '#.##.###', '########', '###.###.', '########'], 6),
+    # il LETTO D'ULIVO: la sponda intagliata e la coltre
+    18: T(['..######', '.#######', '########', '##.##.##',
+           '########', '########', '##....##', '##....##'], 10),
+    19: T(['........', '########', '########', '#.#..#.#',
+           '########', '########', '#......#', '#......#'], 8),
     # HUD
     12: CAVE_TILES[12],
     14: CAVE_TILES[14],
@@ -67,6 +72,50 @@ PICKUP = {10, 13}
 
 PEN_T0 = 20
 PEN_W, PEN_H = 4, 5      # 32x40
+TEL_T0 = 40
+TEL_W, TEL_H = 3, 4      # 24x32
+
+
+def draw_telemaco():
+    """Telemaco: il figlio, giovane e dritto, la lancia in pugno
+    accanto alla madre."""
+    g = [[0] * 24 for _ in range(32)]
+    K, W, SKIN, GOLD = 1, 15, 10, 10
+
+    def disc(cx, cy, rx, ry, c):
+        for y in range(max(0, cy - ry), min(32, cy + ry + 1)):
+            for x in range(max(0, cx - rx), min(24, cx + rx + 1)):
+                if ((x - cx) * ry) ** 2 + ((y - cy) * rx) ** 2 \
+                        <= (rx * ry) ** 2:
+                    g[y][x] = c
+
+    disc(9, 4, 4, 4, K)                     # i capelli corti
+    disc(9, 5, 3, 3, W)                     # il viso
+    g[4][8] = K
+    g[4][10] = K
+    # la tunica bianca al ginocchio
+    for y in range(9, 21):
+        half = 4 + (0 if y < 12 else 1)
+        for x in range(9 - half, 10 + half):
+            if 0 <= x < 24:
+                g[y][x] = W
+    for x in range(5, 14):                  # la cinta
+        g[14][x] = GOLD
+    # le gambe
+    for y in range(21, 30):
+        g[y][6] = SKIN
+        g[y][7] = SKIN
+        g[y][11] = SKIN
+        g[y][12] = SKIN
+    # la LANCIA, dritta come lui
+    for y in range(1, 30):
+        g[y][17] = GOLD
+        g[y][18] = GOLD
+    g[0][17] = W                            # la punta
+    g[0][18] = W
+    g[1][16] = W
+    g[1][19] = W
+    return g
 
 
 def draw_penelope():
@@ -115,7 +164,8 @@ def draw_penelope():
 # stanze ('C' = Penelope, alto-sinistra; 'x' = scure della prova)
 # ------------------------------------------------------------------
 LEGEND = {'#': 1, '=': 2, '-': 3, 'l': 5, ' ': 0, 'E': 7, 'D': 11,
-          'v': 8, '*': 9, 'k': 10, 'i': 13, 'x': 16, 'g': 17}
+          'v': 8, '*': 9, 'k': 10, 'i': 13, 'x': 16, 'g': 17,
+          'b': 18, 'q': 19}
 
 # IL MEGARON DEI PROCI: banchettano da padroni e fanno la ronda.
 # Sei il mendicante: niente armi - si passa schivando, sui tavoli
@@ -209,11 +259,44 @@ ROOM_STRAGE = [
 ]
 
 
+# IL TALAMO: il quadro finale. Il letto d'ulivo - il segreto che
+# solo Ulisse e Penelope conoscono - e accanto Penelope col
+# telaio e Telemaco con la lancia. L'uscita e' fra loro: si
+# torna a casa camminando verso la famiglia.
+ROOM_TALAMO = [
+    '################################',
+    '#  v                        v  #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                              #',
+    '#                 C            #',
+    '#                       T      #',
+    '#                              #',
+    '#          bqqb             E  #',
+    '#          bqqb                #',
+    'gggggggggggggggggggggggggggggggg',
+    '################################',
+    '################################',
+    '################################',
+    '################################',
+]
+
+
 def build_room(art):
     assert len(art) == 24
     tiles = []
     start = (24, 128)
     anchor = None
+    tanchor = None
     for ry, row in enumerate(art):
         assert len(row) == 32, 'riga %d da %d colonne' % (ry, len(row))
         for rx, ch in enumerate(row):
@@ -222,6 +305,9 @@ def build_room(art):
                 tiles.append(0)
             elif ch == 'C':
                 anchor = (rx, ry)
+                tiles.append(0)
+            elif ch == 'T':
+                tanchor = (rx, ry)
                 tiles.append(0)
             else:
                 tiles.append(LEGEND[ch])
@@ -233,42 +319,52 @@ def build_room(art):
                 idx = (ay + by) * 32 + ax + bx
                 if tiles[idx] == 0:
                     tiles[idx] = t
+    if tanchor:
+        ax, ay = tanchor
+        for by in range(TEL_H):
+            for bx in range(TEL_W):
+                t = TEL_T0 + by * TEL_W + bx
+                idx = (ay + by) * 32 + ax + bx
+                if tiles[idx] == 0:
+                    tiles[idx] = t
     return tiles, start, anchor
 
 
-# il PROCO: nobile spavaldo in tunica, coppa in mano
-PROCO_A = ['................',
-           '.....####.......',
-           '....######......',
-           '....#.##.#......',
-           '....######......',
-           '..#..####..#....',
-           '.##.######......',
-           '.#.########.#...',
-           '....######.##...',
-           '....######......',
-           '....##..##......',
-           '....##..##......',
-           '...###..###.....',
-           '................',
-           '................',
-           '................']
+# il PROCO: il banchettatore spavaldo - veste lunga fino ai
+# piedi e la COPPA levata in alto (frame A) o alla bocca (B):
+# brindano da padroni anche mentre fanno la ronda
+PROCO_A = ['..........##....',
+           '.........####...',
+           '..####....##....',
+           '.######...#.....',
+           '.#.##.#..#......',
+           '.######.#.......',
+           '..####.#........',
+           '.########.......',
+           '.#########......',
+           '.#########......',
+           '.#########......',
+           '..########......',
+           '..########......',
+           '..########......',
+           '..########......',
+           '..##....##......']
 PROCO_B = ['................',
-           '.....####.......',
-           '....######......',
-           '....#.##.#......',
-           '....######......',
-           '....####..#.....',
-           '..########.##...',
-           '.#.########.....',
-           '.##.######......',
-           '....######......',
-           '...##....##.....',
-           '...##....##.....',
-           '..###....###....',
-           '................',
-           '................',
-           '................']
+           '....##..........',
+           '...####.........',
+           '..######........',
+           '..#.##.#........',
+           '..######........',
+           '...####.........',
+           '..########......',
+           '.##########.....',
+           '.#########......',
+           '.#########......',
+           '..########......',
+           '..########......',
+           '..########......',
+           '..########......',
+           '..##....##......']
 
 # la freccia (verso destra; la sinistra e' specchiata)
 ARROW_R = ['................',
@@ -290,7 +386,7 @@ ARROW_R = ['................',
 
 
 def main():
-    n_tiles = PEN_T0 + PEN_W * PEN_H
+    n_tiles = TEL_T0 + TEL_W * TEL_H
     pat = [[0] * 8 for _ in range(n_tiles)]
     col = [[0x14] * 8 for _ in range(n_tiles)]
     for idx, (rows, fg, bg) in TILES.items():
@@ -308,6 +404,13 @@ def main():
             t = PEN_T0 + by * PEN_W + bx
             pat[t] = list(p)
             col[t] = list(c)
+    fig = draw_telemaco()
+    for by in range(TEL_H):
+        for bx in range(TEL_W):
+            p, c = grid_tile(fig, bx, by)
+            t = TEL_T0 + by * TEL_W + bx
+            pat[t] = list(p)
+            col[t] = list(c)
 
     types = [0] * 256
     for t in SOLID:
@@ -318,7 +421,7 @@ def main():
         types[t] = 3
 
     rooms = [build_room(ROOM_MEGARON), build_room(ROOM_BOW),
-             build_room(ROOM_STRAGE)]
+             build_room(ROOM_STRAGE), build_room(ROOM_TALAMO)]
 
     def find_ch(art, ch):
         for ry, row in enumerate(art):
@@ -383,6 +486,7 @@ def main():
 
     preview(pat, col, rooms[1][0], 'bow_preview.png')
     preview(pat, col, rooms[2][0], 'strage_preview.png')
+    preview(pat, col, rooms[3][0], 'talamo_preview.png')
 
 
 def preview(pat, col, tiles, name):

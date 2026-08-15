@@ -73,10 +73,11 @@ SIR_W, SIR_H = 4, 5      # 32x40
 
 
 def draw_siren():
-    """La sirena del mito: donna-uccello - chioma nera, viso e
-    torso chiari, le ALI grigie spiegate, artigli sullo scoglio."""
+    """La sirena come la conoscono tutti: chioma nera fluente,
+    viso e torso chiari, e la CODA DI PESCE verde che si curva
+    sullo scoglio, con la pinna a ventaglio e le squame."""
     g = [[0] * 32 for _ in range(40)]
-    K, W, GRAY, GOLD = 1, 15, 14, 10
+    K, W, GRAY, GOLD, TAIL = 1, 15, 14, 10, 12
 
     def disc(cx, cy, rx, ry, c):
         for y in range(max(0, cy - ry), min(40, cy + ry + 1)):
@@ -85,43 +86,44 @@ def draw_siren():
                         <= (rx * ry) ** 2:
                     g[y][x] = c
 
-    # le ali spiegate (grigie), piume a dente
-    for i in range(12):
-        y0 = 6 + i
-        for x in range(2 + i // 3, 12 - i // 4):
-            g[y0][x] = GRAY
-        for x in range(20 + i // 4, 30 - i // 3):
-            g[y0][x] = GRAY
-    for x in range(2, 12, 3):               # punte delle piume
-        g[18][x] = GRAY
-        g[19][x + 1] = GRAY
-    for x in range(21, 31, 3):
-        g[18][x] = GRAY
-        g[19][x - 1] = GRAY
-    # la chioma e il viso
-    disc(16, 7, 6, 6, K)
-    disc(16, 9, 4, 4, W)
-    g[8][14] = K                            # occhi neri
-    g[8][18] = K
-    g[11][16] = K                           # la bocca che CANTA
-    g[12][16] = K
-    # il torso chiaro che si stringe
-    for y in range(13, 24):
-        half = 5 - (y - 13) // 3
-        for x in range(16 - half, 17 + half):
-            g[y][x] = W
+    # la chioma: fluente sulle spalle e giu' su un fianco
+    disc(14, 6, 6, 6, K)
+    for y in range(8, 22):
+        for x in range(7, 11 + (y - 8) // 4):
+            if ((x * 5 + y * 3) % 11) != 0:
+                g[y][x] = K
+    # il viso
+    disc(14, 8, 4, 4, W)
+    g[7][12] = K                            # occhi neri
+    g[7][16] = K
+    g[10][14] = K                           # la bocca che CANTA
+    g[11][14] = K
     # il diadema
-    g[3][15] = GOLD
-    g[3][16] = GOLD
-    g[3][17] = GOLD
-    # zampe d'uccello e artigli
-    for y in range(24, 30):
-        g[y][13] = GOLD
-        g[y][19] = GOLD
-    for x in (11, 13, 15):
-        g[30][x] = GOLD
-    for x in (17, 19, 21):
-        g[30][x] = GOLD
+    g[2][13] = GOLD
+    g[2][14] = GOLD
+    g[2][15] = GOLD
+    # il torso chiaro, le braccia raccolte
+    for y in range(12, 21):
+        half = 4 - (y - 12) // 4
+        for x in range(14 - half, 15 + half):
+            g[y][x] = W
+    # la CODA: dal bacino si curva verso destra, a squame
+    for y in range(20, 31):
+        cx = 14 + (y - 20)                  # scivola a destra
+        half = 4 - (y - 20) // 5
+        for x in range(cx - half, cx + half + 1):
+            if 0 <= x < 32:
+                if ((x * 3 + y * 5) % 7) != 0:
+                    g[y][x] = TAIL          # squame verdi
+    # la PINNA a ventaglio, in punta
+    for i in range(6):
+        y0 = 25 + i
+        for x in range(25 + i // 2, 31):
+            if 0 <= y0 < 40:
+                g[y0][x] = TAIL
+    g[27][27] = 0                           # i raggi della pinna
+    g[28][28] = 0
+    g[29][27] = 0
     # lo scoglio del nido
     for y in range(31, 40):
         half = 6 + (y - 31)

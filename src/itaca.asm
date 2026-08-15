@@ -887,6 +887,8 @@ proci_tab:
         db  0,0,0,0
         db  1,138,16,224    ; la strage: entrano in due,
         db  1,138,16,224    ; e ne arrivano cinque
+        db  0,0,0,0         ; il talamo: solo la famiglia,
+        db  0,0,0,0         ; e la pace
 
 ; ------------------------------------------------------------
 ; fine episodio: la vittoria qui e' il VIAGGIO COMPIUTO
