@@ -40,10 +40,14 @@ BASE_TILES = {
           '########', '#.###.##', '########', '##.####.'], C_ROCK),
     2: T(['########', '########', '#.#..#.#', '........',
           '........', '.#..#..#', '........', '........'], C_FLOOR),
-    # la CENGIA di roccia: bordo frastagliato sopra, gocce e
-    # spuntoni sotto - una sporgenza della caverna, non una barra
-    3: T(['.###.###', '########', '########', '##.###.#',
-          '.##..##.', '.#....#.', '..#.....', '........'], C_ROCK),
+    # la CENGIA di roccia, due varianti alternate (3/19) perche'
+    # la ripetizione non si veda: massa piena e irregolare, crepe,
+    # fondo a spuntoni; la cresta (righe 0-1) viene ricolorata di
+    # grigio in main(): la luce che batte sulla sporgenza
+    3: T(['.##.####', '########', '########', '#.##.###',
+          '########', '.##.###.', '..###.#.', '...#....'], C_ROCK),
+    19: T(['####.##.', '########', '#.######', '########',
+           '####.###', '.######.', '.#.###..', '....#...'], C_ROCK),
     4: T(['########', '##.###.#', '########', '########',
           '#.##.###', '########', '###.###.', '########'], C_SAND),
     5: T(['........', '..##..##', '........', '##..##..',
@@ -74,7 +78,7 @@ BASE_TILES = {
            '########', '.######.', '........', '........'], 8),
 }
 
-SOLID = {1, 2, 3, 4}
+SOLID = {1, 2, 3, 4, 19}
 EXIT = {7}
 PICKUP = {10, 13}       # il palo (tipo 3: si raccoglie)
 
@@ -378,6 +382,10 @@ def build_room(art):
                 tiles.append(0)
             else:
                 tiles.append(LEGEND[ch])
+    # le cenge alternano le due varianti: niente ripetizione
+    for i, t in enumerate(tiles):
+        if t == 3 and (i & 1):
+            tiles[i] = 19
     if anchor:
         ax, ay = anchor
         eye_t0 = POLI_T0 + POLI_W * POLI_H
@@ -588,6 +596,12 @@ def main():
                     b |= 0x80 >> i
             pat[idx][y] = b
             col[idx][y] = (fg << 4) | bg
+    # la cresta delle cenge (righe 0-1) e' grigia: la luce che
+    # batte sulla sporgenza; il corpo resta roccia scura
+    for y in range(2):
+        col[3][y] = (14 << 4) | 4
+        col[19][y] = (14 << 4) | 4
+
     closed = draw_polifemo(0)
     for by in range(POLI_H):
         for bx in range(POLI_W):
