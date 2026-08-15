@@ -342,7 +342,7 @@ ep_physics:
         push af
         ld  a,0             ; tonfo
         ld  (ep_sfx_ty),a
-        ld  a,8
+        ld  a,14
         ld  (ep_sfx_t),a
         pop af
 .quiet:
@@ -413,7 +413,7 @@ ep_physics:
         ld  (ep_hud),a      ; l'icona nell'HUD
         xor a               ; "clack" del legno
         ld  (ep_sfx_ty),a
-        ld  a,6
+        ld  a,12
         ld  (ep_sfx_t),a
         ret
 .door:
@@ -1634,9 +1634,14 @@ ep_audio:
         ld  a,(ep_sfx_ty)
         or  a
         jr  nz,.n1
-        ; tonfo: breve, sordo
-        ld  b,10
-        ld  c,12
+        ; tonfo: SECCO - piena botta subito, coda breve
+        ld  a,d
+        cp  8
+        jr  c,.tqu
+        ld  a,15
+.tqu:
+        ld  b,a
+        ld  c,22
         jr  .out
 .n1:
         dec a

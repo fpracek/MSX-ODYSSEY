@@ -12,7 +12,7 @@ cave_pat:
         db  000h,000h,000h,000h,000h,000h,000h,000h
         db  0FFh,0B7h,0FFh,0EDh,0FFh,0BBh,0FFh,0DEh
         db  0FFh,0FFh,0A5h,000h,000h,049h,000h,000h
-        db  0FFh,0FFh,042h,000h,000h,000h,000h,000h
+        db  077h,0FFh,0FFh,0DDh,066h,042h,020h,000h
         db  0FFh,0DDh,0FFh,0FFh,0B7h,0FFh,0EEh,0FFh
         db  000h,033h,000h,0CCh,000h,033h,000h,0CCh
         db  000h,000h,000h,000h,000h,000h,000h,000h
@@ -209,7 +209,7 @@ cave_col:
         db  014h,014h,014h,014h,014h,014h,014h,014h
         db  064h,064h,064h,064h,064h,064h,064h,064h
         db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
-        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  064h,064h,064h,064h,064h,064h,064h,064h
         db  0B4h,0B4h,0B4h,0B4h,0B4h,0B4h,0B4h,0B4h
         db  054h,054h,054h,054h,054h,054h,054h,054h
         db  014h,014h,014h,014h,014h,014h,014h,014h

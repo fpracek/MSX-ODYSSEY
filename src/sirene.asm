@@ -373,7 +373,7 @@ ep_physics:
         jr  c,.still
         ld  a,0
         ld  (ep_sfx_ty),a
-        ld  a,8
+        ld  a,14
         ld  (ep_sfx_t),a
 .still:
         xor a
@@ -1205,8 +1205,13 @@ si_audio:
         ld  a,(ep_sfx_ty)
         or  a
         jr  nz,.n1
-        ld  b,10            ; tonfo
-        ld  e,12
+        ld  a,d             ; tonfo: SECCO, piena botta subito
+        cp  8
+        jr  c,.tqu
+        ld  a,15
+.tqu:
+        ld  b,a
+        ld  e,22
         jp  .outn
 .n1:
         dec a
