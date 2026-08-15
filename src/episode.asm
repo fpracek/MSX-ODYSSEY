@@ -1280,7 +1280,14 @@ ep_isr:
         ld  a,(hand_xx)
         add a,8
         out (098h),a
+        ld  a,(frame_cnt)   ; le dita brancolano: 2 frame
+        and 8
+        jr  z,.hh1
+        ld  a,144
+        jr  .hh2
+.hh1:
         ld  a,140
+.hh2:
         out (098h),a
         ld  a,10
         out (098h),a
