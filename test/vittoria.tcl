@@ -49,6 +49,8 @@ after time 14 {
     debug write memory 0xC052 48
     debug write memory 0xC054 40
 }
+# il colpo va SFERRATO: freccia in basso
+tap 8 64 14.3
 after time 15.5 {
     debug write memory 0xC05E 200
     debug write memory 0xC052 228

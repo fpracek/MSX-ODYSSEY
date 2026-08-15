@@ -50,6 +50,8 @@ after time 14 {
     debug write memory 0xC052 48
     debug write memory 0xC054 40
 }
+# il colpo va SFERRATO: freccia in basso
+tap 8 64 14.3
 after time 15 {
     if {[catch {
         set bl [debug read memory 0xC077]

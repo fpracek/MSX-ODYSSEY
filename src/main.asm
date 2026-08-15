@@ -1348,15 +1348,16 @@ rnd8:
         ret
 
 ; la difficolta' per tratta: target, fulmine-min, mostro-min,
-; sereno/4, tempesta/4, isola-all'orizzonte. Piu' lontano da
-; Troia = rotte piu' lunghe, cieli piu' neri, mari piu' pieni.
+; sereno/4, tempesta/4, isola-all'orizzonte. La ROTTA e' sempre
+; 24 (allungarla annoia): a crescere sono i cieli neri, i fulmini
+; e i mostri.
 diff_tab:
         db  24,50,120,150,175,21    ; verso i Ciclopi
-        db  28,44,104,135,185,25    ; verso Circe
-        db  32,38, 92,120,195,29    ; verso Eolia
-        db  36,32, 80,105,205,33    ; verso le Sirene
-        db  40,27, 70, 90,215,37    ; verso Scilla e Cariddi
-        db  44,22, 60, 75,225,41    ; verso Itaca
+        db  24,44,104,135,185,21    ; verso Circe
+        db  24,38, 92,120,195,21    ; verso Eolia
+        db  24,32, 80,105,205,21    ; verso le Sirene
+        db  24,27, 70, 90,215,21    ; verso Scilla e Cariddi
+        db  24,22, 60, 75,225,21    ; verso Itaca
 
 ; ------------------------------------------------------------
 ; vento di Eolo: ogni GUST_LEN frame una nuova raffica-obiettivo

@@ -79,6 +79,8 @@ nt_qcnt   equ 0C07Bh    ; celle (passo 32 = in colonna); 0 = vuota
 pain_step equ 0C07Ch    ; volto del dolore: 3 sopracciglio,
                         ; 2 bocca-su, 1 bocca-giu (uno per frame)
 pup_last  equ 0C07Dh    ; ultima posa della pupilla mostrata
+cmus_i    equ 0C07Eh    ; la musica di fondo della caverna
+cmus_t    equ 0C07Fh
 room_map  equ 0C100h    ; copia RAM della stanza (768 byte)
 
 STK_COL  equ 15         ; colonna HUD dell'icona del palo
@@ -148,9 +150,9 @@ ep_start:
         ld  hl,ep_isr
         ld  (HTIMI+1),hl
         ; PSG: tono A+B (effetti e russare), rumore su A
-        ld  a,7
-        out (0A0h),a
-        ld  a,10110100b
+        ld  a,7             ; toni A+B+C (C = la musica di fondo),
+        out (0A0h),a        ; rumore sul canale A
+        ld  a,10110000b
         out (0A1h),a
         call psg_mute
         ei
@@ -215,6 +217,8 @@ ep_input:
         ret nz
         ld  a,1
         ld  (ep_jlatch),a
+        call stab_ready     ; sul ciglio, pronto al colpo:
+        ret nz              ; FIRE affonda il palo, non salta
         ld  a,(ep_ong)
         or  a
         ret z
@@ -671,35 +675,56 @@ pup_seq:
         db  1,5,1,4         ; centro, destra, centro, sinistra
 
 ; ------------------------------------------------------------
-; la STOCCATA: in piedi sul sopracciglio, il corpo sopra
-; l'occhio, il palo in mano e il ciclope ADDORMENTATO ->
-; l'accecamento. Poi la furia cieca (la mano spazza senza sosta)
-; e la bocca della caverna s'illumina: e' la via di fuga.
+; NZ = pronto alla stoccata: palo in mano, in piedi sul
+; sopracciglio sopra l'occhio, e il ciclope ADDORMENTATO
+; (l'occhio DEVE essere chiuso: da sveglio ti sente)
 ; ------------------------------------------------------------
-ep_stab:
+stab_ready:
         ld  a,(ep_stake)
         or  a
         ret z
         ld  a,(ep_blind)
         or  a
-        ret nz
+        jr  z,.b1
+.no:
+        xor a
+        ret
+.b1:
         ld  a,(cyc_state)
         or  a
-        ret nz              ; solo nel sonno: da sveglio ti sente
+        jr  nz,.no
         ld  a,(ep_ong)
         or  a
-        ret z               ; a piedi fermi, non al volo
+        jr  z,.no
         ld  a,(ep_yh)
         cp  STAB3_Y-4
-        ret c
+        jr  c,.no
         cp  STAB3_Y+5
-        ret nc
+        jr  nc,.no
         ld  a,(ep_xh)
         add a,8
         cp  STAB3_PX0
-        ret c
+        jr  c,.no
         cp  STAB3_PX1+1
-        ret nc
+        jr  nc,.no
+        or  a               ; NZ: in posizione (a = centro-x > 0)
+        ret
+
+; ------------------------------------------------------------
+; la STOCCATA: in posizione e nel sonno, il colpo va SFERRATO -
+; SPAZIO o freccia in basso affondano il palo. Poi la furia
+; cieca e la bocca della caverna s'illumina: la via di fuga.
+; ------------------------------------------------------------
+ep_stab:
+        call stab_ready
+        ret z
+        call read_trig      ; SPAZIO/FIRE...
+        cp  0FFh
+        jr  z,.colpo
+        call read_stick     ; ...o la freccia in basso
+        cp  5
+        ret nz
+.colpo:
         ; ACCECATO!
         ld  a,1
         ld  (ep_blind),a
@@ -1534,6 +1559,7 @@ tile_write_fast:
 ; audio dell'episodio: effetti sul canale A, russare sul B
 ; ------------------------------------------------------------
 ep_audio:
+        call cave_music     ; il fondo sommesso non tace mai
         ; --- effetti ---
         ld  a,(ep_sfx_t)
         or  a
@@ -1738,6 +1764,61 @@ ep_audio:
         xor a
         out (0A1h),a
         ret
+
+; ------------------------------------------------------------
+; la musica della caverna (canale C): note basse e rade, in
+; minore, pizzicate - un fondo che respira SOTTO i suoni di
+; gioco (effetti a volume 10-15, il fondo si spegne da 5 a 1:
+; i rumori che svegliano il ciclope restano in primo piano)
+; ------------------------------------------------------------
+cave_music:
+        ld  hl,cmus_t
+        inc (hl)
+        ld  a,(hl)
+        cp  32
+        jr  c,.note
+        ld  (hl),0
+        ld  hl,cmus_i
+        ld  a,(hl)
+        inc a
+        and 7
+        ld  (hl),a
+.note:
+        ld  a,(cmus_i)
+        add a,a
+        ld  l,a
+        ld  h,0
+        ld  bc,cave_mus_tab
+        add hl,bc
+        ld  a,4             ; periodo del canale C (fine+coarse:
+        out (0A0h),a        ; le note basse vogliono 16 bit)
+        ld  a,(hl)
+        out (0A1h),a
+        inc hl
+        ld  a,5
+        out (0A0h),a
+        ld  a,(hl)
+        out (0A1h),a
+        ld  a,(cmus_t)      ; ogni nota si spegne come pizzicata
+        srl a
+        srl a
+        srl a
+        ld  b,a
+        ld  a,5
+        sub b
+        jr  nc,.vok
+        xor a
+.vok:
+        ld  b,a
+        ld  a,10
+        out (0A0h),a
+        ld  a,b
+        out (0A1h),a
+        ret
+
+; La minore, bassa e inquieta: la caverna respira
+cave_mus_tab:
+        dw  1017, 679, 855, 679, 762, 1017, 855, 640
 
 ; --- guardia di fine banco 2 ---
         DS  0A000h-$,0FFh
