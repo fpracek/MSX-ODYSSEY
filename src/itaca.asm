@@ -82,7 +82,7 @@ ep_start:
         di
         ld  hl,ep_sprites
         ld  de,VR_SPRP
-        ld  bc,41*32
+        ld  bc,43*32
         call vdp_copy
         ld  hl,cave_pat
         ld  de,VR_PAT
@@ -187,6 +187,9 @@ ep_input:
         ld  (ep_jlatch),a
         ld  a,(arco)
         or  a
+        jr  z,.jump
+        ld  a,(ep_room)     ; a casa l'arco si abbassa: al talamo
+        cp  3               ; non si tira piu'
         jr  z,.jump
         ld  a,(ep_mov)
         or  a
@@ -934,6 +937,14 @@ ep_load_room:
         ld  (b1_d),a
         ld  a,1
         ld  (ep_hud),a
+        ld  a,(ep_room)     ; al talamo: le campane della festa
+        cp  3
+        jr  nz,.nofesta
+        ld  a,2
+        ld  (ep_sfx_ty),a
+        ld  a,30
+        ld  (ep_sfx_t),a
+.nofesta:
         ld  b,11100010b
         ld  c,1
         call WRTVDP
@@ -1109,6 +1120,10 @@ ep_isr:
         out (098h),a
         ld  a,10
         out (098h),a
+        ; --- al talamo: la PIOGGIA DI PETALI (slot 5-7) ---
+        ld  a,(ep_room)
+        cp  3
+        jp  z,.petali
         ; --- slot 5: la freccia ---
         ld  a,(arr_on)
         or  a
@@ -1198,6 +1213,62 @@ ep_isr:
         out (098h),a
         out (098h),a
         out (098h),a
+        jp  .oamend
+.petali:
+        ; tre petali che scendono ondeggiando, colori di festa
+        ld  e,0
+.ptl:
+        ; quota: cade piano, ogni petalo sfasato di 1/3 di giro
+        ld  a,e
+        rrca
+        rrca                ; e*64
+        ld  b,a
+        ld  a,(frame_cnt)
+        srl a
+        add a,b
+        and 127
+        add a,24            ; 24..151: mai 208!
+        out (098h),a
+        ; x: colonna del petalo + l'ondeggio del beccheggio
+        ld  a,(frame_cnt)
+        rrca
+        rrca
+        rrca
+        and 15
+        ld  l,a
+        ld  h,0
+        ld  bc,ship_bob
+        add hl,bc
+        ld  a,e
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,a
+        add a,a             ; e*64
+        add a,48
+        add a,(hl)
+        out (098h),a
+        ld  a,(frame_cnt)
+        and 8
+        jr  z,.pt1
+        ld  a,168
+        jr  .pt2
+.pt1:
+        ld  a,164
+.pt2:
+        out (098h),a
+        ld  a,e             ; i colori della festa: rosa, rosso,
+        ld  l,a             ; giallo chiaro
+        ld  h,0
+        ld  bc,petal_cols
+        add hl,bc
+        ld  a,(hl)
+        out (098h),a
+        inc e
+        ld  a,e
+        cp  3
+        jr  c,.ptl
 .oamend:
         ld  a,208
         out (098h),a
@@ -1409,11 +1480,22 @@ it_audio:
         xor a
         out (0A1h),a
 .lyre:
-        ; --- la lira di casa: arpeggio maggiore, quieto ---
+        ; --- la lira di casa: quieta nel palazzo, in FESTA al
+        ;     talamo (piu' svelta, piu' piena) ---
+        ld  a,(ep_room)
+        cp  3
+        jr  z,.fest
+        ld  c,20            ; tempo quieto
+        ld  e,5             ; volume di fondo
+        jr  .go2
+.fest:
+        ld  c,12            ; tempo di danza
+        ld  e,7
+.go2:
         ld  hl,lyre_t
         inc (hl)
         ld  a,(hl)
-        cp  20
+        cp  c
         jr  c,.note
         ld  (hl),0
         ld  hl,lyre_i
@@ -1426,6 +1508,14 @@ it_audio:
         ld  l,a
         ld  h,0
         ld  bc,lyre_tab
+        ld  a,(ep_room)
+        cp  3
+        jr  nz,.tabok
+        ld  bc,lyre_fest
+.tabok:
+        ld  a,(lyre_i)
+        ld  l,a
+        ld  h,0
         add hl,bc
         ld  a,2
         out (0A0h),a
@@ -1439,7 +1529,7 @@ it_audio:
         srl a
         srl a
         ld  b,a
-        ld  a,5
+        ld  a,e
         sub b
         jr  nc,.lv
         xor a
@@ -1454,3 +1544,8 @@ it_audio:
 ; Do maggiore: casa, finalmente
 lyre_tab:
         db  214,170,143,170,214,143,107,143
+; ...e al talamo la lira FA FESTA: piu' su, piu' svelta
+lyre_fest:
+        db  143,107,127,107,143,107,95,80
+petal_cols:
+        db  9,8,11          ; rosa, rosso, giallo chiaro

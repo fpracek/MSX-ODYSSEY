@@ -1,5 +1,5 @@
 ; GENERATO da tools/gen_itaca.py - NON MODIFICARE A MANO
-CAVE_NT equ 52
+CAVE_NT equ 63
 EP_NROOMS equ 4
 ARCO_OFF equ 394
 ARCO_TILE equ 10
@@ -58,6 +58,17 @@ cave_pat:
         db  003h,003h,003h,003h,003h,003h,000h,000h
         db  018h,018h,018h,018h,018h,018h,000h,000h
         db  060h,060h,060h,060h,060h,060h,000h,000h
+        db  018h,018h,03Ch,024h,066h,042h,0C3h,0C3h
+        db  03Eh,062h,0C0h,0C0h,0C0h,0C0h,062h,03Eh
+        db  0FEh,060h,030h,010h,030h,060h,0FEh,000h
+        db  0FEh,0C0h,0C0h,0FCh,0C0h,0C0h,0C0h,000h
+        db  0C6h,0C6h,0C6h,0FEh,0C6h,0C6h,0C6h,0C6h
+        db  0C0h,0C0h,0C0h,0C0h,0C0h,0C0h,0FEh,000h
+        db  0C3h,0E7h,0DBh,0DBh,0C3h,0C3h,0C3h,0C3h
+        db  03Ch,066h,0C3h,0C3h,0C3h,0C3h,066h,03Ch
+        db  0FCh,0C6h,0C6h,0FCh,0D8h,0CCh,0C6h,000h
+        db  0FEh,0FEh,010h,010h,010h,010h,010h,038h
+        db  0C3h,0C3h,0C3h,0DBh,0DBh,0DBh,066h,024h
 cave_col:
         db  014h,014h,014h,014h,014h,014h,014h,014h
         db  0E4h,0E4h,0E4h,0E4h,0E4h,0E4h,0E4h,0E4h
@@ -111,6 +122,17 @@ cave_col:
         db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,014h,014h
         db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,014h,014h
         db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,014h,014h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
         ALIGN 256
 type_tab:
         db  000h,001h,001h,001h,000h,000h,000h,002h,000h,000h,003h,000h,000h,003h,000h,000h
@@ -291,8 +313,8 @@ room3:
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
         db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
-        db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
-        db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
+        db  001h,000h,000h,000h,000h,000h,03Eh,036h,039h,035h,03Bh,03Ah,036h,000h,038h,03Bh
+        db  03Ah,036h,000h,037h,034h,03Dh,038h,036h,03Ch,000h,000h,000h,000h,000h,000h,001h
         db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
         db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
@@ -339,7 +361,7 @@ room_tab:
         dw  room2, room2_meta
         dw  room3, room3_meta
 ; sprite: Ulisse 35 pattern, PROCO 140/144 dx
-; 148/152 sx, FRECCIA 156 dx 160 sx
+; 148/152 sx, FRECCIA 156 dx 160 sx, PETALI 164/168
 ep_sprites:
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,008h,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,010h,0F8h,0F8h,0F8h,0F8h,0F8h,0F8h
@@ -423,3 +445,7 @@ ep_sprites:
         db  000h,000h,000h,000h,000h,000h,008h,0ECh,0FAh,0ECh,008h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,010h,037h,05Fh,037h,010h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,0FDh,0FDh,0FDh,000h,000h,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,006h,00Fh,006h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,000h,001h,003h,001h,000h,000h,000h,000h,000h,000h,000h
+        db  000h,000h,000h,000h,000h,000h,080h,0C0h,080h,000h,000h,000h,000h,000h,000h,000h

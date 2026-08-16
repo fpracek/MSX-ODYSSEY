@@ -15,7 +15,11 @@ import os
 from gen_cave import (grid_tile, db_lines, sprite16, ul_layer, ul_mirror,
                       BASE_TILES as CAVE_TILES,
                       UL_STAND, PR_WALKA, PR_WALKB, PR_JUMP)
-from gen_sky import PAL
+from gen_sky import PAL, GLYPHS
+
+# le parole di Telemaco: il riconoscimento, in lettere d'oro
+ENDTXT = 'WELCOME HOME FATHER'
+ENDROW = 4
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -384,11 +388,50 @@ ARROW_R = ['................',
            '................',
            '................']
 
+# i PETALI della festa (due frame di caduta ondeggiante)
+PETAL_A = ['................',
+           '................',
+           '................',
+           '................',
+           '................',
+           '.....##.........',
+           '....####........',
+           '.....##.........',
+           '................',
+           '................', '................', '................',
+           '................', '................', '................',
+           '................']
+PETAL_B = ['................',
+           '................',
+           '................',
+           '................',
+           '................',
+           '................',
+           '.......##.......',
+           '......####......',
+           '.......##.......',
+           '................', '................', '................',
+           '................', '................', '................',
+           '................']
+
 
 def main():
-    n_tiles = TEL_T0 + TEL_W * TEL_H
+    # le lettere d'oro del finale: un tile per lettera unica
+    letters = sorted(set(ENDTXT) - {' '})
+    TXT_T0 = TEL_T0 + TEL_W * TEL_H
+    lmap = {ch: TXT_T0 + i for i, ch in enumerate(letters)}
+    n_tiles = TXT_T0 + len(letters)
     pat = [[0] * 8 for _ in range(n_tiles)]
     col = [[0x14] * 8 for _ in range(n_tiles)]
+    for ch, t in lmap.items():
+        rows = GLYPHS[ch]
+        for y in range(8):
+            b = 0
+            for i, c in enumerate(rows[y]):
+                if c == '#':
+                    b |= 0x80 >> i
+            pat[t][y] = b
+            col[t][y] = (10 << 4) | 4       # ORO su indaco
     for idx, (rows, fg, bg) in TILES.items():
         for y in range(8):
             b = 0
@@ -422,6 +465,11 @@ def main():
 
     rooms = [build_room(ROOM_MEGARON), build_room(ROOM_BOW),
              build_room(ROOM_STRAGE), build_room(ROOM_TALAMO)]
+    # le parole di Telemaco, centrate, nell'ultima stanza
+    col0 = (32 - len(ENDTXT)) // 2
+    for i, ch in enumerate(ENDTXT):
+        if ch != ' ':
+            rooms[3][0][ENDROW * 32 + col0 + i] = lmap[ch]
 
     def find_ch(art, ch):
         for ry, row in enumerate(art):
@@ -460,7 +508,7 @@ def main():
     for k in range(len(rooms)):
         out.append('        dw  room%d, room%d_meta' % (k, k))
     out.append('; sprite: Ulisse 35 pattern, PROCO 140/144 dx')
-    out.append('; 148/152 sx, FRECCIA 156 dx 160 sx')
+    out.append('; 148/152 sx, FRECCIA 156 dx 160 sx, PETALI 164/168')
     out.append('ep_sprites:')
     poses = [UL_STAND, PR_WALKA, PR_WALKB, PR_JUMP,
              ul_mirror(PR_WALKA), ul_mirror(PR_WALKB), ul_mirror(PR_JUMP)]
@@ -472,7 +520,8 @@ def main():
                 ul_layer(up, 'K'),
                 ul_layer(up, 'B'), ul_layer(dn, 'B')]
     for art in seq + [PROCO_A, PROCO_B, ul_mirror(PROCO_A),
-                      ul_mirror(PROCO_B), ARROW_R, ul_mirror(ARROW_R)]:
+                      ul_mirror(PROCO_B), ARROW_R, ul_mirror(ARROW_R),
+                      PETAL_A, PETAL_B]:
         data = sprite16(art)
         for i in range(0, 32, 16):
             out.append('        db  ' +
