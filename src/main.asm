@@ -200,14 +200,21 @@ v_ser       equ 0C08Bh  ; dw: frame di sereno
 v_sto       equ 0C08Dh  ; dw: frame di tempesta
 v_islp      equ 0C08Fh  ; prog_h a cui l'isola appare
 
-; LO STRETTO di Scilla e Cariddi (tratta 4): la traversata stessa
-; e' il boss doppio - Scilla erutta mirando alla nave, Cariddi
-; risucchia dal vortice, in alternanza
+; LO STRETTO di Scilla e Cariddi: l'ATTO CENTRALE della rotta
+; finale (tratta 4, in tre atti: mare aperto verso Itaca, lo
+; stretto col suo boss doppio - Scilla erutta mirando alla nave,
+; Cariddi risucchia dal vortice - e ancora mare aperto). Gli
+; atti li decide il progresso: [STR_IN, STR_OUT) e' lo stretto.
+STR_IN      equ 8       ; prog_h d'ingresso nello stretto
+STR_OUT     equ 16      ; prog_h d'uscita (target 24: terzi esatti)
 str_st      equ 0C090h  ; 0 quiete, 1 Scilla, 2 gorgo che si apre,
                         ; 3 RISUCCHIO
 str_t       equ 0C091h
 vortex_x    equ 0C092h
 str_side    equ 0C093h  ; il lato del prossimo vortice
+str_act     equ 0C094h  ; atto corrente: 0 andata, 1 STRETTO, 2 uscita
+banner_req  equ 0C095h  ; scritta nel cielo da caricare (ISR):
+                        ; 0 = niente, altrimenti indice tratta + 1
 
 ; RENZO: digitato sul titolo, la ciurma non si consuma mai.
 ; Il flag vive FUORI dalle aree azzerate (kernel C000-3F,
@@ -438,10 +445,20 @@ init:
         ld  de,VR_PAT+13*8  ; ottavo glifo nel tile 13
         ld  bc,8
         call vdp_copy
+        ld  de,VR_PAT+16*8  ; slot extra 16-18 (l'insegna dello
+        ld  bc,24           ; stretto: vuoti nelle altre tratte)
+        call vdp_copy
         pop hl
         ld  de,VR_NAME+2*32
         ld  bc,32
         call vdp_copy
+        ; colori degli slot extra: marmo su cielo sereno, una volta
+        ; sola (visibili solo nello stretto, dove il cielo E' sereno:
+        ; il recolor di tempesta si ferma ai 16 tile del cielo)
+        ld  a,0F5h
+        ld  de,VR_COL+16*8
+        ld  bc,24
+        call vdp_fill
         ; foschia dell'orizzonte: 2 tile statici, righe 8-9
         ld  hl,haze_pat
         ld  de,VR_PAT+0800h+HAZE_T0*8
@@ -639,6 +656,8 @@ init:
         xor a
         ld  (str_st),a
         ld  (str_side),a
+        ld  (str_act),a     ; primo atto: mare aperto
+        ld  (banner_req),a
         ld  a,120
         ld  (str_t),a
         ld  a,100
@@ -668,15 +687,29 @@ main_loop:
         call update_wind
         call update_speeds
         call update_ship
+        ; la rotta finale (tratta 4) e' in TRE ATTI: mare aperto,
+        ; LO STRETTO nel terzo centrale del progresso, mare aperto
         ld  a,(leg)
         cp  4
-        jr  z,.strait
+        jr  nz,.normal
+        ld  a,(prog_h)
+        cp  STR_IN
+        jr  c,.normal       ; atto 1: rotta per Itaca
+        cp  STR_OUT
+        jr  nc,.actout
+        ld  a,(str_act)     ; atto 2: SCILLA E CARIDDI
+        dec a
+        call nz,strait_enter
+        call strait_upd
+        jr  .prest
+.actout:
+        ld  a,(str_act)     ; atto 3: lo stretto e' alle spalle
+        cp  2
+        call nz,strait_exit
+.normal:
         call update_weather
         call update_bolt
         call update_rock
-        jr  .prest
-.strait:
-        call strait_upd     ; lo STRETTO: Scilla e Cariddi
 .prest:
         call update_gull
         call update_progress
@@ -905,8 +938,8 @@ update_rock:
         ld  a,(rock_t)
         or  a
         jr  nz,.active
-        ld  a,(leg)         ; nello STRETTO lo spawn e' di Scilla
-        cp  4
+        ld  a,(str_act)     ; nello STRETTO lo spawn e' di Scilla
+        dec a
         ret z
         ld  a,(weather)     ; spawn solo col bel tempo
         or  a
@@ -980,6 +1013,56 @@ update_rock:
         cp  20
         ret nc
         jp  ship_hit
+
+; ------------------------------------------------------------
+; l'INGRESSO nello stretto (atto 2): il temporale - se c'e' - si
+; ritira di colpo (Scilla e Cariddi vogliono vederti), i pericoli
+; ordinari cessano, l'insegna dei mostri prende il cielo e un
+; rombo lungo annuncia che il mare e' cambiato
+; ------------------------------------------------------------
+strait_enter:
+        ld  a,1
+        ld  (str_act),a
+        ld  a,(weather)
+        or  a
+        jr  z,.calm
+        xor a
+        ld  (weather),a
+        ld  a,2
+        ld  (recolor),a     ; il cielo si sgombra all'istante
+.calm:
+        xor a
+        ld  (bolt_t),a      ; niente fulmini residui
+        ld  (rock_t),a      ; la piovra delle acque aperte si ritira
+        ld  (str_st),a
+        ld  a,90
+        ld  (str_t),a       ; una quiete breve, poi Scilla
+        ld  a,5+1           ; l'insegna: SCYLLA AND CHARYBDIS
+        ld  (banner_req),a
+        ld  a,45
+        ld  (thunder_t),a   ; il rombo che apre lo stretto
+        xor a
+        ld  (sfx_type),a
+        ret
+
+; ------------------------------------------------------------
+; l'USCITA dallo stretto (atto 3): il gorgo si chiude, Scilla
+; s'inabissa, la scritta torna TO ITHACA e il gabbiano saluta
+; il mare aperto; il meteo riparte dal sereno pieno
+; ------------------------------------------------------------
+strait_exit:
+        ld  a,2
+        ld  (str_act),a
+        xor a
+        ld  (str_st),a
+        ld  (rock_t),a
+        ld  hl,(v_ser)
+        ld  (wtimer_l),hl
+        ld  a,4+1           ; la scritta torna: TO ITHACA
+        ld  (banner_req),a
+        ld  a,24
+        ld  (chirp_t),a     ; il peggio e' passato
+        ret
 
 ; ------------------------------------------------------------
 ; LO STRETTO (tratta 4): il boss doppio. In quiete si naviga;
@@ -1366,8 +1449,10 @@ diff_tab:
         db  24,44,104,135,185,21    ; verso Circe
         db  24,38, 92,120,195,21    ; verso Eolia
         db  24,32, 80,105,205,21    ; verso le Sirene
-        db  24,27, 70, 90,215,21    ; verso Scilla e Cariddi
-        db  24,22, 60, 75,225,21    ; verso Itaca
+        db  24,27, 70, 90,215,21    ; la ROTTA FINALE: Itaca via lo
+                                    ; stretto (tre atti sul progresso)
+        db  24,22, 60, 75,225,21    ; (inutilizzata: la tratta 5 non
+                                    ; si naviga piu')
 
 ; ------------------------------------------------------------
 ; vento di Eolo: ogni GUST_LEN frame una nuova raffica-obiettivo
@@ -1773,6 +1858,8 @@ cheat_check:
         jr  nc,.dg
         dec c               ; C = cifra 1..6
         ld  a,c
+        cp  5
+        jr  nc,.finale
         dec a
         ld  (leg),a
         ld  l,a
@@ -1781,6 +1868,19 @@ cheat_check:
         add hl,bc
         ld  a,(hl)
         ld  (phase),a       ; sbarco diretto se c'e' l'episodio
+        or  0FFh            ; NZ: scattato
+        ret
+.finale:
+        ; l'ultima rotta e' UNA sola (la 4, in tre atti):
+        ; GOTO5 = si salpa verso lo stretto, GOTO6 = dritti a Itaca
+        ld  a,4
+        ld  (leg),a
+        ld  a,c
+        sub 5
+        jr  z,.fsail        ; GOTO5: phase 0, si naviga
+        ld  a,5             ; GOTO6: l'episodio del finale
+.fsail:
+        ld  (phase),a
         or  0FFh            ; NZ: scattato
         ret
 
@@ -2151,9 +2251,10 @@ mus_tickC:
         ret
 
 ; quali isole hanno un episodio a terra (il valore = phase:
-; 1 Polifemo, 2 Circe, 3 Eolo, 4 Sirene, 5 ITACA - il finale)
+; 1 Polifemo, 2 Circe, 3 Eolo, 4 Sirene; la tratta 4 - lo
+; stretto - APPRODA A ITACA: il finale senza altro mare in mezzo)
 episode_tab:
-        db  1,2,3,4,0,5
+        db  1,2,3,4,5,5
 
 ; le raffiche di Eolo: perlopiu' favorevoli (il viaggio procede),
 ; con bonacce e colpi contrari da governare col timone
@@ -2244,6 +2345,63 @@ gauge_on:                   ; label per test/measure.tcl
         ld  (cntC),a
         call blastC
 .skC:
+        ; --- cambio della scritta nel cielo (evento raro: gli atti
+        ;     dello stretto). Se un recolor e' in coda passa lui per
+        ;     primo: la scritta arriva al frame dopo (mai entrambi i
+        ;     blast nello stesso blank) ---
+        ld  a,(banner_req)
+        or  a
+        jr  z,.nobn
+        ld  e,a
+        ld  a,(recolor)
+        or  a
+        jr  nz,.nobn
+        ld  a,e
+        dec a               ; indice della tratta
+        add a,a
+        add a,a
+        ld  l,a
+        ld  h,0
+        ld  bc,dest_tab
+        add hl,bc
+        ld  e,(hl)
+        inc hl
+        ld  d,(hl)
+        inc hl
+        ld  c,(hl)
+        inc hl
+        ld  b,(hl)          ; BC = riga, DE = pattern
+        push bc
+        ex  de,hl
+        ld  a,low (VR_PAT+1*8)
+        out (099h),a
+        ld  a,(high (VR_PAT+1*8))|40h
+        out (099h),a
+        ld  b,56            ; 7 glifi nei tile 1-7
+        call blast_bytes
+        ld  a,low (VR_PAT+13*8)
+        out (099h),a
+        ld  a,(high (VR_PAT+13*8))|40h
+        out (099h),a
+        ld  b,8             ; ottavo glifo nel tile 13
+        call blast_bytes
+        ld  a,low (VR_PAT+16*8)
+        out (099h),a
+        ld  a,(high (VR_PAT+16*8))|40h
+        out (099h),a
+        ld  b,24            ; slot extra dell'insegna
+        call blast_bytes
+        pop hl
+        ld  a,low (VR_NAME+2*32)
+        out (099h),a
+        ld  a,(high (VR_NAME+2*32))|40h
+        out (099h),a
+        ld  b,32
+        call blast_bytes
+        xor a
+        ld  (banner_req),a
+        jp  .norec          ; per questo blank basta cosi'
+.nobn:
         ; --- recolor del meteo (evento raro: cambio cielo) ---
         ld  a,(recolor)
         or  a
@@ -2551,8 +2709,8 @@ oam_hazard_blk:
         jp  .bhl
 .rkdraw:                    ; A = attributo Y del MOSTRO (base)
         ld  d,a
-        ld  a,(leg)
-        cp  4
+        ld  a,(str_act)     ; solo nell'atto centrale e' SCILLA
+        dec a
         jr  z,.scylla
         ; --- la PIOVRA delle acque aperte: testa e tentacoli ---
         ld  a,d

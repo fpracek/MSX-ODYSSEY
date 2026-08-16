@@ -1009,19 +1009,11 @@ ep_finish:
         jr  nz,.lose
         call crew_reward
         xor a
-        ld  (phase),a
-        ld  a,(leg)
-        inc a
-        cp  N_DESTS
-        jr  c,.setleg
-        xor a               ; ITACA E' RAGGIUNTA: il giro si
-        ld  (leg),a         ; chiude e l'Odissea ricomincia
-        ld  (leg_magic),a
+        ld  (phase),a       ; ITACA E' RAGGIUNTA: il giro si
+        ld  (leg),a         ; chiude SEMPRE (e' l'ultimo episodio,
+        ld  (leg_magic),a   ; da qualunque tratta ci si arrivi)
         ld  a,CREW0
         ld  (crew_keep),a
-        jp  init
-.setleg:
-        ld  (leg),a
         jp  init
 .lose:
         ld  a,CREW0

@@ -126,7 +126,9 @@ def draw_map(leg):
         _, x1, y1 = NODES[k + 1]
         if k < leg:
             r.line(x0, y0, x1, y1, C_DONE)
-        elif k == leg:
+        elif k == leg or (leg == 4 and k == 5):
+            # la rotta finale (tratta 4) passa lo stretto e arriva a
+            # Itaca in un solo viaggio: entrambi i segmenti in partenza
             r.line(x0, y0, x1, y1, C_CURR)
             r.line(x0, y0 + 1, x1, y1 + 1, C_CURR)   # doppia: in partenza
         else:

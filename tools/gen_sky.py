@@ -36,11 +36,17 @@ C_SEA = 7       # cyan della banda C (per la foschia)
 
 # Le TRATTE: la scritta nel cielo e' la prossima isola del viaggio,
 # NON Itaca (che e' solo l'ultima). L'ordine e' quello del DESIGN.
-# Ogni nome usa al massimo 8 lettere diverse (gli slot tile liberi
-# del terzo 0: 1-7 e 13); il main carica il blocco della tratta.
+# La rotta finale (tratta 4) e' in TRE ATTI: "TO ITHACA", poi lo
+# stretto rivela la sua insegna (blocco 5, caricato a runtime
+# dall'ISR), poi di nuovo "TO ITHACA" per l'ultimo mare.
+# Ogni nome usa al massimo 11 lettere diverse (slot tile 1-7 e 13
+# del terzo 0, piu' 16-18 tra i tile liberi oltre il cielo: gli
+# extra servono solo all'insegna dello stretto, che appare sempre
+# col cielo forzato al sereno - il recolor di tempesta non li
+# tocca); il main carica il blocco della tratta.
 DESTS = ['TO CYCLOPS', 'TO CIRCE', 'TO AEOLIA',
-         'TO SIRENS', 'STRAIT TO ITHACA', 'TO ITHACA']
-GLYPH_SLOTS = [1, 2, 3, 4, 5, 6, 7, 13]
+         'TO SIRENS', 'TO ITHACA', 'SCYLLA AND CHARYBDIS']
+GLYPH_SLOTS = [1, 2, 3, 4, 5, 6, 7, 13, 16, 17, 18]
 TEXT_ROW = 2
 SUN_COL = 26    # tile 2x2 alle colonne 26-27, righe 1-2
 
@@ -165,6 +171,14 @@ GLYPHS = {
           '...#....',
           '...#....',
           '...#....',
+          '........'],
+    'B': ['######..',
+          '##...##.',
+          '##...##.',
+          '######..',
+          '##...##.',
+          '##...##.',
+          '######..',
           '........'],
     'D': ['######..',
           '##...##.',
