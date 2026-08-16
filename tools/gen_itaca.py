@@ -122,11 +122,17 @@ def draw_telemaco():
     return g
 
 
-def draw_penelope():
+TELA_YS = list(range(6, 34, 4))     # le quote dei 7 fili
+
+
+def draw_penelope(threads=True):
     """Penelope al TELAIO: il velo scuro, la veste chiara, la
-    trama d'oro sul telaio - vent'anni di attesa."""
+    trama d'ORO sul telaio - vent'anni di attesa. threads=False
+    da' la variante a telaio nudo (per l'animazione del disfare:
+    fili e montanti sono dello stesso oro, cosi' lo scambio di
+    pattern non tocca i colori)."""
     g = [[0] * 32 for _ in range(40)]
-    K, W, GOLD, GRAY = 1, 15, 10, 14
+    K, W, GOLD = 1, 15, 10
 
     def disc(cx, cy, rx, ry, c):
         for y in range(max(0, cy - ry), min(40, cy + ry + 1)):
@@ -135,7 +141,7 @@ def draw_penelope():
                         <= (rx * ry) ** 2:
                     g[y][x] = c
 
-    # il TELAIO: montanti e trama d'oro (a sinistra)
+    # il TELAIO: montanti e cimasa d'oro (a sinistra)
     for y in range(2, 36):
         g[y][2] = GOLD
         g[y][3] = GOLD
@@ -144,9 +150,10 @@ def draw_penelope():
     for x in range(2, 14):
         g[2][x] = GOLD
         g[3][x] = GOLD
-    for y in range(6, 34, 4):               # i fili della tela
-        for x in range(4, 12):
-            g[y][x] = GRAY
+    if threads:
+        for y in TELA_YS:                   # i fili della tela
+            for x in range(4, 12):
+                g[y][x] = GOLD
     # Penelope: il velo scuro sul capo, il viso, la veste
     disc(22, 8, 5, 6, K)                    # il velo
     disc(22, 10, 3, 3, W)                   # il viso
@@ -234,19 +241,20 @@ ROOM_BOW = [
 # LA STRAGE: porte sbarrate, i Proci CARICANO a ondate - l'arco
 # li abbatte, i tavoli danno respiro ma da lassu' non si tira
 # (la freccia parte all'altezza del petto). L'ultimo caduto apre
-# la porta: il viaggio e' compiuto.
+# la porta. Dall'alcova PENELOPE assiste: la sua tela si compone
+# e si disfa, come nei vent'anni dell'attesa.
 ROOM_STRAGE = [
     '################################',
     '#  v         v v            v  #',
     '#                              #',
     '#                              #',
     '#                              #',
+    '#  C                           #',
     '#                              #',
     '#                              #',
     '#                              #',
     '#                              #',
-    '#                              #',
-    '#                              #',
+    '# ######                       #',
     '#                              #',
     '#                              #',
     '#                              #',
@@ -447,6 +455,31 @@ def main():
             t = PEN_T0 + by * PEN_W + bx
             pat[t] = list(p)
             col[t] = list(c)
+    # la TELA che si compone e si disfa: per ogni filo, i byte di
+    # pattern CON e SENZA (2 tile per filo, stessa riga). I bit si
+    # calcolano DIRETTAMENTE (bit = pixel d'oro) e il colore di
+    # quelle righe si inchioda a oro-su-indaco: la quantizzazione
+    # di grid_tile invertirebbe fg/bg quando l'oro e' maggioranza
+    fig_wo = draw_penelope(False)
+
+    def rowbits(g, y, x0):
+        b = 0
+        for i in range(8):
+            if g[y][x0 + i] == 10:
+                b |= 0x80 >> i
+        return b
+
+    tela = []
+    for y in TELA_YS:
+        by, r = y // 8, y % 8
+        t_a = PEN_T0 + by * PEN_W
+        tela.append((t_a, r,
+                     rowbits(fig, y, 0), rowbits(fig_wo, y, 0),
+                     rowbits(fig, y, 8), rowbits(fig_wo, y, 8)))
+        pat[t_a][r] = rowbits(fig, y, 0)
+        pat[t_a + 1][r] = rowbits(fig, y, 8)
+        col[t_a][r] = (10 << 4) | 4
+        col[t_a + 1][r] = (10 << 4) | 4
     fig = draw_telemaco()
     for by in range(TEL_H):
         for bx in range(TEL_W):
@@ -489,6 +522,12 @@ def main():
     out.append('ARCO_TILE equ 10')
     out.append('DARK1_OFF equ %d' % (d1y * 32 + d1x))
     out.append('DARK2_OFF equ %d' % (d2y * 32 + d2x))
+    out.append('TELA_N equ %d' % len(tela))
+    out.append('; per filo: tile, riga, con_a, senza_a, con_b, senza_b')
+    out.append('tela_tab:')
+    for t_a, r, wa, oa, wb, ob in tela:
+        out.append('        db  %d,%d,%d,%d,%d,%d'
+                   % (t_a, r, wa, oa, wb, ob))
     out.append('cave_pat:')
     for t in range(n_tiles):
         out.extend(db_lines(pat[t]))

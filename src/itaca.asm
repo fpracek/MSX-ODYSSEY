@@ -47,6 +47,9 @@ dead      equ 0C069h    ; Proci abbattuti (strage)
 spawn_t   equ 0C06Ah
 door_off  equ 0C06Bh    ; dw: offset NT della porta di stanza
 charge_f  equ 0C06Dh    ; 1 = i Proci avanzano (carica a scatti)
+tela_n    equ 0C06Eh    ; fili tessuti sulla tela di Penelope
+tela_t    equ 0C06Fh
+tela_ph   equ 0C081h    ; 0 = tesse, 1 = disfa
 bar_last  equ 0C070h
 nt_qoff   equ 0C071h
 nt_qval   equ 0C073h
@@ -1294,6 +1297,41 @@ ep_isr:
         xor a
         ld  (nt_qcnt),a
 .noq:
+        ; --- la TELA di Penelope: si compone e si disfa, come
+        ; nei vent'anni dell'attesa (un filo ogni mezzo secondo)
+        ld  hl,tela_t
+        inc (hl)
+        ld  a,(hl)
+        cp  26
+        jr  c,.notela
+        ld  (hl),0
+        ld  a,(tela_ph)
+        or  a
+        jr  nz,.disfa
+        ld  a,(tela_n)
+        cp  TELA_N
+        jr  c,.tessi
+        ld  a,1             ; tela piena: la notte la disfa
+        ld  (tela_ph),a
+        jr  .notela
+.tessi:
+        ld  c,0             ; C=0: scrivi i byte CON il filo
+        call tela_row
+        ld  hl,tela_n
+        inc (hl)
+        jr  .notela
+.disfa:
+        ld  a,(tela_n)
+        or  a
+        jr  nz,.dis1
+        ld  (tela_ph),a     ; nuda: il giorno ritesse
+        jr  .notela
+.dis1:
+        dec a
+        ld  (tela_n),a
+        ld  c,1             ; C=1: i byte SENZA il filo
+        call tela_row
+.notela:
         ; --- HUD: ciurma, i Proci abbattuti, l'arco ---
         ld  a,(ep_hud)
         or  a
@@ -1376,6 +1414,76 @@ ep_isr:
         call it_audio
         ld  hl,frame_cnt
         inc (hl)
+        ret
+
+; ------------------------------------------------------------
+; un filo della tela: A = indice, C = 0 scrivi CON il filo,
+; 1 SENZA. Riscrive una riga di pattern in 2 tile x 3 terzi
+; (12 scritture: briciole di vblank)
+; ------------------------------------------------------------
+tela_row:
+        ld  e,a
+        ld  d,0
+        ld  l,a
+        ld  h,0
+        add hl,hl
+        add hl,hl
+        add hl,de
+        add hl,de           ; *6
+        ld  de,tela_tab
+        add hl,de
+        ld  a,(hl)          ; il tile sinistro del telaio
+        inc hl
+        ld  e,(hl)          ; la riga del filo
+        inc hl
+        push hl
+        ld  l,a
+        ld  h,0
+        add hl,hl
+        add hl,hl
+        add hl,hl
+        ld  d,0
+        add hl,de           ; tile*8 + riga
+        ex  de,hl           ; DE = offset nella pattern table
+        pop hl
+        ld  a,c
+        or  a
+        jr  z,.pick
+        inc hl              ; la variante SENZA
+.pick:
+        ld  b,(hl)          ; byte del tile sinistro
+        inc hl
+        inc hl
+        ld  c,(hl)          ; byte del tile destro
+        ld  hl,VR_PAT
+        add hl,de
+        call .pw
+        ld  hl,VR_PAT+0800h
+        add hl,de
+        call .pw
+        ld  hl,VR_PAT+1000h
+        add hl,de
+.pw:                        ; l'ultima terzina cade qui e ritorna
+        ld  a,l
+        out (099h),a
+        ld  a,h
+        or  40h
+        out (099h),a
+        ld  a,b
+        out (098h),a
+        ld  a,l
+        add a,8
+        ld  l,a
+        jr  nc,.pw2
+        inc h
+.pw2:
+        ld  a,l
+        out (099h),a
+        ld  a,h
+        or  40h
+        out (099h),a
+        ld  a,c
+        out (098h),a
         ret
 
 ; ------------------------------------------------------------

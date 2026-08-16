@@ -5,6 +5,16 @@ ARCO_OFF equ 394
 ARCO_TILE equ 10
 DARK1_OFF equ 573
 DARK2_OFF equ 573
+TELA_N equ 7
+; per filo: tile, riga, con_a, senza_a, con_b, senza_b
+tela_tab:
+        db  20,6,63,48,252,12
+        db  24,2,63,48,252,12
+        db  24,6,63,48,252,12
+        db  28,2,63,48,252,12
+        db  28,6,63,48,252,12
+        db  32,2,63,48,252,12
+        db  32,6,63,48,252,12
 cave_pat:
         db  000h,000h,000h,000h,000h,000h,000h,000h
         db  0FFh,091h,0FFh,0C5h,0FFh,0A5h,0FFh,089h
@@ -26,20 +36,20 @@ cave_pat:
         db  0FFh,0DDh,0FFh,0FFh,0B7h,0FFh,0EEh,0FFh
         db  03Fh,07Fh,0FFh,0DBh,0FFh,0FFh,0C3h,0C3h
         db  000h,0FFh,0FFh,0A5h,0FFh,0FFh,081h,081h
-        db  000h,000h,0C0h,0C0h,030h,030h,0C0h,030h
-        db  000h,000h,003h,003h,00Ch,00Ch,00Fh,00Ch
+        db  000h,000h,0C0h,0C0h,030h,030h,03Fh,030h
+        db  000h,000h,003h,003h,00Ch,00Ch,0FCh,00Ch
         db  000h,000h,002h,00Fh,0E0h,0C0h,0C0h,0C2h
         db  000h,000h,000h,080h,0C0h,0E0h,0E0h,0E0h
-        db  030h,030h,0C0h,030h,030h,030h,0C0h,030h
-        db  00Ch,00Ch,00Fh,00Ch,00Ch,00Ch,00Fh,00Ch
+        db  030h,030h,03Fh,030h,030h,030h,03Fh,030h
+        db  00Ch,00Ch,0FCh,00Ch,00Ch,00Ch,0FCh,00Ch
         db  0F0h,0F0h,0E0h,0F0h,0F0h,00Dh,0C2h,0C0h
         db  070h,060h,0C0h,060h,080h,080h,0E0h,0E0h
-        db  030h,030h,0C0h,030h,030h,030h,0C0h,030h
-        db  00Ch,00Ch,00Fh,00Dh,00Ch,00Ch,00Fh,00Ch
+        db  030h,030h,03Fh,030h,030h,030h,03Fh,030h
+        db  00Ch,00Ch,0FCh,00Dh,00Ch,00Ch,0FCh,00Ch
         db  0C0h,080h,000h,000h,080h,080h,0C0h,0C0h
         db  0E0h,0E0h,00Fh,00Fh,00Fh,00Fh,007h,007h
-        db  030h,030h,0C0h,030h,030h,030h,0C0h,030h
-        db  00Ch,00Ch,00Eh,00Dh,00Dh,00Dh,00Ch,00Fh
+        db  030h,030h,03Fh,030h,030h,030h,03Fh,030h
+        db  00Ch,00Ch,0FCh,00Dh,00Dh,00Dh,0FCh,00Fh
         db  000h,000h,000h,000h,000h,000h,000h,000h
         db  007h,007h,003h,003h,003h,003h,001h,001h
         db  030h,030h,030h,030h,000h,000h,000h,000h
@@ -90,20 +100,20 @@ cave_col:
         db  064h,064h,064h,064h,064h,064h,064h,064h
         db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
         db  084h,084h,084h,084h,084h,084h,084h,084h
-        db  014h,014h,04Ah,04Ah,0A4h,0A4h,04Eh,0A4h
-        db  014h,014h,04Ah,04Ah,0A4h,0A4h,0AEh,0A4h
+        db  014h,014h,04Ah,04Ah,0A4h,0A4h,0A4h,0A4h
+        db  014h,014h,04Ah,04Ah,0A4h,0A4h,0A4h,0A4h
         db  014h,014h,014h,014h,041h,041h,041h,041h
         db  014h,014h,014h,014h,014h,014h,014h,014h
-        db  0A4h,0A4h,04Eh,0A4h,0A4h,0A4h,04Eh,0A4h
-        db  0A4h,0A4h,0AEh,0A4h,0A4h,0A4h,0AEh,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
         db  01Fh,04Fh,04Fh,04Fh,04Fh,014h,04Fh,04Fh
         db  014h,014h,0F4h,014h,0F4h,014h,0F4h,0F4h
-        db  0A4h,0A4h,04Eh,0A4h,0A4h,0A4h,04Eh,0A4h
-        db  0A4h,0A4h,0AEh,0A4h,0A4h,0A4h,0AEh,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
         db  04Fh,04Fh,01Fh,01Fh,04Fh,04Fh,0FAh,0FAh
         db  0F4h,0F4h,04Fh,04Fh,04Fh,04Fh,04Ah,04Ah
-        db  0A4h,0A4h,04Eh,0A4h,0A4h,0A4h,04Eh,0A4h
-        db  0A4h,0A4h,0AEh,0A4h,0A4h,0A4h,0AEh,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
+        db  0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h,0A4h
         db  01Fh,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh,01Fh
         db  04Fh,04Fh,04Fh,04Fh,04Fh,04Fh,04Fh,04Fh
         db  0A4h,0A4h,0A4h,0A4h,014h,014h,014h,014h
@@ -264,17 +274,17 @@ room2:
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
         db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
-        db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  001h,000h,000h,014h,015h,016h,017h,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
-        db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  001h,000h,000h,018h,019h,01Ah,01Bh,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
-        db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  001h,000h,000h,01Ch,01Dh,01Eh,01Fh,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
-        db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  001h,000h,000h,020h,021h,022h,023h,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
-        db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  001h,000h,000h,024h,025h,026h,027h,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
-        db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
+        db  001h,000h,001h,001h,001h,001h,001h,001h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
         db  001h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h
         db  000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,000h,001h
